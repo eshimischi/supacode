@@ -91,24 +91,28 @@ private struct SidebarView: View {
     var body: some View {
         List(selection: $selection) {
             ForEach(repositories) { repository in
-                DisclosureGroup(
-                    isExpanded: Binding(
-                        get: { expandedRepoIDs.contains(repository.id) },
-                        set: { isExpanded in
-                            if isExpanded {
-                                expandedRepoIDs.insert(repository.id)
-                            } else {
-                                expandedRepoIDs.remove(repository.id)
-                            }
+                Section {
+                    if expandedRepoIDs.contains(repository.id) {
+                        ForEach(repository.worktrees) { worktree in
+                            WorktreeRow(name: worktree.name, detail: worktree.detail)
+                                .tag(worktree.id)
                         }
-                    )
-                ) {
-                    ForEach(repository.worktrees) { worktree in
-                        WorktreeRow(name: worktree.name, detail: worktree.detail)
-                            .tag(worktree.id)
                     }
-                } label: {
-                    RepoHeaderRow(name: repository.name, initials: repository.initials)
+                } header: {
+                    Button {
+                        if expandedRepoIDs.contains(repository.id) {
+                            expandedRepoIDs.remove(repository.id)
+                        } else {
+                            expandedRepoIDs.insert(repository.id)
+                        }
+                    } label: {
+                        RepoHeaderRow(
+                            name: repository.name,
+                            initials: repository.initials,
+                            isExpanded: expandedRepoIDs.contains(repository.id)
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -125,9 +129,13 @@ private struct SidebarView: View {
 private struct RepoHeaderRow: View {
     let name: String
     let initials: String
+    let isExpanded: Bool
     
     var body: some View {
         HStack {
+            Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             ZStack {
                 Circle()
                     .fill(.secondary.opacity(0.2))
