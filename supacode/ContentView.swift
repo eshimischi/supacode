@@ -98,20 +98,18 @@ private struct WorktreeDetailView: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 Menu {
                     ForEach(OpenWorktreeAction.allCases) { action in
-                        if let shortcut = action.shortcut {
-                            Button(action.title, systemImage: action.systemImage) {
-                                performOpenAction(action)
+                        Button {
+                            performOpenAction(action)
+                        } label: {
+                            if let appIcon = action.appIcon {
+                                Label { Text(action.title) } icon: { Image(nsImage: appIcon) }
+                            } else {
+                                Label(action.title, systemImage: "app")
                             }
-                            .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
-                            .help(action.helpText)
-                            .disabled(selectedWorktree == nil)
-                        } else {
-                            Button(action.title, systemImage: action.systemImage) {
-                                performOpenAction(action)
-                            }
-                            .help(action.helpText)
-                            .disabled(selectedWorktree == nil)
                         }
+                        .modifier(OpenActionShortcutModifier(shortcut: action.shortcut))
+                        .help(action.helpText)
+                        .disabled(selectedWorktree == nil)
                     }
                 } label: {
                     Label("Open", systemImage: "folder")
@@ -273,5 +271,17 @@ private struct EmptyStateView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
         .multilineTextAlignment(.center)
+    }
+}
+
+private struct OpenActionShortcutModifier: ViewModifier {
+    let shortcut: AppShortcut?
+
+    func body(content: Content) -> some View {
+        if let shortcut {
+            content.keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
+        } else {
+            content
+        }
     }
 }

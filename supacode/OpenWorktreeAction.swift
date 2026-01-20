@@ -5,63 +5,37 @@ enum OpenWorktreeAction: CaseIterable, Identifiable {
     case cursor
     case zed
     case ghostty
-    case copyPath
 
-    var id: String {
-        title
-    }
+    var id: String { title }
 
     var title: String {
         switch self {
-        case .finder:
-            return "Open Finder"
-        case .cursor:
-            return "Cursor"
-        case .zed:
-            return "Zed"
-        case .ghostty:
-            return "Ghostty"
-        case .copyPath:
-            return "Copy Path"
+        case .finder: "Open Finder"
+        case .cursor: "Cursor"
+        case .zed: "Zed"
+        case .ghostty: "Ghostty"
         }
     }
 
-    var systemImage: String {
-        switch self {
-        case .finder:
-            return "folder"
-        case .cursor:
-            return "cursorarrow"
-        case .zed:
-            return "chevron.left.slash.chevron.right"
-        case .ghostty:
-            return "terminal"
-        case .copyPath:
-            return "doc.on.doc"
-        }
+    var appIcon: NSImage? {
+        guard let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
+        else { return nil }
+        return NSWorkspace.shared.icon(forFile: appURL.path)
     }
 
     var shortcut: AppShortcut? {
         switch self {
-        case .finder:
-            return AppShortcuts.openFinder
-        case .copyPath:
-            return AppShortcuts.copyPath
-        case .cursor, .zed, .ghostty:
-            return nil
+        case .finder: AppShortcuts.openFinder
+        case .cursor, .zed, .ghostty: nil
         }
     }
 
-    var bundleIdentifier: String? {
+    var bundleIdentifier: String {
         switch self {
-        case .cursor:
-            return "com.todesktop.230313mzl4w4u92"
-        case .zed:
-            return "dev.zed.Zed"
-        case .ghostty:
-            return "com.mitchellh.ghostty"
-        case .finder, .copyPath:
-            return nil
+        case .finder: "com.apple.finder"
+        case .cursor: "com.todesktop.230313mzl4w4u92"
+        case .zed: "dev.zed.Zed"
+        case .ghostty: "com.mitchellh.ghostty"
         }
     }
 
@@ -76,12 +50,8 @@ enum OpenWorktreeAction: CaseIterable, Identifiable {
         switch self {
         case .finder:
             NSWorkspace.shared.activateFileViewerSelecting([worktree.workingDirectory])
-        case .copyPath:
-            let path = worktree.workingDirectory.path(percentEncoded: false)
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(path, forType: .string)
         case .cursor, .zed, .ghostty:
-            guard let bundleIdentifier, let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) else {
+            guard let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) else {
                 onError(OpenActionError(
                     title: "\(title) not found",
                     message: "Install \(title) to open this worktree."
