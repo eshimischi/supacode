@@ -11,19 +11,36 @@
 		D6A1CB312F1F4ABF004FDABD /* GhosttyKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6A1CB2F2F1F4A48004FDABD /* GhosttyKit.xcframework */; };
 		D6A1CB362F1F4ACB004FDABD /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6A1CB342F1F4AC2004FDABD /* Carbon.framework */; };
 		D6A1CB3A2F1F4B00004FDABD /* ghostty in Resources */ = {isa = PBXBuildFile; fileRef = D6A1CB392F1F4B00004FDABD /* ghostty */; };
+		D6F820F52F1FC962004B4174 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = D6F820F42F1FC962004B4174 /* Kingfisher */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D6F821052F1FCBC1004B4174 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D69CE0422F1F378200584C57 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D69CE0492F1F378200584C57;
+			remoteInfo = supacode;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		D69CE04A2F1F378200584C57 /* supacode.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = supacode.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D6A1CB2F2F1F4A48004FDABD /* GhosttyKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = GhosttyKit.xcframework; sourceTree = "<group>"; };
 		D6A1CB342F1F4AC2004FDABD /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		D6A1CB392F1F4B00004FDABD /* ghostty */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ghostty; path = supacode/Resources/ghostty; sourceTree = "<group>"; };
+		D6F821012F1FCBC1004B4174 /* supacodeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = supacodeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D69CE04C2F1F378200584C57 /* supacode */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = supacode;
+			sourceTree = "<group>";
+		};
+		D6F821022F1FCBC1004B4174 /* supacodeTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = supacodeTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -33,9 +50,17 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D6F820F52F1FC962004B4174 /* Kingfisher in Frameworks */,
 				D6A1CB312F1F4ABF004FDABD /* GhosttyKit.xcframework in Frameworks */,
 				D61414532F1F9799007DF542 /* Bonsplit in Frameworks */,
 				D6A1CB362F1F4ACB004FDABD /* Carbon.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D6F820FE2F1FCBC1004B4174 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -47,6 +72,7 @@
 			children = (
 				D6A1CB392F1F4B00004FDABD /* ghostty */,
 				D69CE04C2F1F378200584C57 /* supacode */,
+				D6F821022F1FCBC1004B4174 /* supacodeTests */,
 				D69CE04B2F1F378200584C57 /* Products */,
 				D6A1CB2E2F1F4A36004FDABD /* Frameworks */,
 			);
@@ -56,6 +82,7 @@
 			isa = PBXGroup;
 			children = (
 				D69CE04A2F1F378200584C57 /* supacode.app */,
+				D6F821012F1FCBC1004B4174 /* supacodeTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -91,10 +118,34 @@
 			name = supacode;
 			packageProductDependencies = (
 				D61414522F1F9799007DF542 /* Bonsplit */,
+				D6F820F42F1FC962004B4174 /* Kingfisher */,
 			);
 			productName = supacode;
 			productReference = D69CE04A2F1F378200584C57 /* supacode.app */;
 			productType = "com.apple.product-type.application";
+		};
+		D6F821002F1FCBC1004B4174 /* supacodeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D6F821072F1FCBC1004B4174 /* Build configuration list for PBXNativeTarget "supacodeTests" */;
+			buildPhases = (
+				D6F820FD2F1FCBC1004B4174 /* Sources */,
+				D6F820FE2F1FCBC1004B4174 /* Frameworks */,
+				D6F820FF2F1FCBC1004B4174 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D6F821062F1FCBC1004B4174 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D6F821022F1FCBC1004B4174 /* supacodeTests */,
+			);
+			name = supacodeTests;
+			packageProductDependencies = (
+			);
+			productName = supacodeTests;
+			productReference = D6F821012F1FCBC1004B4174 /* supacodeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -103,11 +154,15 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2600;
+				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					D69CE0492F1F378200584C57 = {
 						CreatedOnToolsVersion = 26.0;
+					};
+					D6F821002F1FCBC1004B4174 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = D69CE0492F1F378200584C57;
 					};
 				};
 			};
@@ -122,6 +177,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				D61414512F1F9799007DF542 /* XCRemoteSwiftPackageReference "bonsplit" */,
+				D6F820F32F1FC962004B4174 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D69CE04B2F1F378200584C57 /* Products */;
@@ -129,6 +185,7 @@
 			projectRoot = "";
 			targets = (
 				D69CE0492F1F378200584C57 /* supacode */,
+				D6F821002F1FCBC1004B4174 /* supacodeTests */,
 			);
 		};
 /* End PBXProject section */
@@ -139,6 +196,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				D6A1CB3A2F1F4B00004FDABD /* ghostty in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D6F820FF2F1FCBC1004B4174 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -171,7 +235,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D6F820FD2F1FCBC1004B4174 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D6F821062F1FCBC1004B4174 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D69CE0492F1F378200584C57 /* supacode */;
+			targetProxy = D6F821052F1FCBC1004B4174 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		D69CE0532F1F378200584C57 /* Debug */ = {
@@ -390,6 +469,48 @@
 			};
 			name = Release;
 		};
+		D6F821082F1FCBC1004B4174 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9ZLSJ2GN2B;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.supabit.supacodeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/supacode.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/supacode";
+			};
+			name = Debug;
+		};
+		D6F821092F1FCBC1004B4174 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9ZLSJ2GN2B;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.supabit.supacodeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/supacode.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/supacode";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -411,6 +532,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		D6F821072F1FCBC1004B4174 /* Build configuration list for PBXNativeTarget "supacodeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D6F821082F1FCBC1004B4174 /* Debug */,
+				D6F821092F1FCBC1004B4174 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -422,6 +552,14 @@
 				kind = branch;
 			};
 		};
+		D6F820F32F1FC962004B4174 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -429,6 +567,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D61414512F1F9799007DF542 /* XCRemoteSwiftPackageReference "bonsplit" */;
 			productName = Bonsplit;
+		};
+		D6F820F42F1FC962004B4174 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D6F820F32F1FC962004B4174 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

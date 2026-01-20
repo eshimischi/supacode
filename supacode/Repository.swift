@@ -5,5 +5,6 @@ struct Repository: Identifiable, Hashable {
     let rootURL: URL
     let name: String
     let initials: String
+    let githubOwner: String?
     let worktrees: [Worktree]
 }

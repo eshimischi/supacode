@@ -4,7 +4,7 @@ CURRENT_MAKEFILE_DIR := $(patsubst %/,%,$(dir $(CURRENT_MAKEFILE_PATH)))
 GHOSTTY_XCFRAMEWORK_PATH := $(CURRENT_MAKEFILE_DIR)/Frameworks/GhosttyKit.xcframework
 
 .DEFAULT_GOAL := help
-.PHONY: serve build-ghostty-xcframework build-app run-app sync-ghostty-resources
+.PHONY: serve build-ghostty-xcframework build-app run-app sync-ghostty-resources test
 
 help:  # Display this help.
 	@-+echo "Run make with one of the following targets:"
@@ -14,10 +14,10 @@ help:  # Display this help.
 build-ghostty-xcframework: $(GHOSTTY_XCFRAMEWORK_PATH) # Build ghostty framework
 
 $(GHOSTTY_XCFRAMEWORK_PATH):
-	@cd $(CURRENT_MAKEFILE_DIR) && git submodule update --init --recursive
-	@cd $(CURRENT_MAKEFILE_DIR) && mise install
+	git submodule update --init --recursive
+	mise install
 	@cd $(CURRENT_MAKEFILE_DIR)/ThirdParty/ghostty && mise exec -- zig build -Doptimize=ReleaseFast -Demit-xcframework=true -Dsentry=false
-	@cd $(CURRENT_MAKEFILE_DIR) && rsync -a ThirdParty/ghostty/macos/GhosttyKit.xcframework Frameworks
+	rsync -a ThirdParty/ghostty/macos/GhosttyKit.xcframework Frameworks
 
 sync-ghostty-resources: # Sync ghostty resources (themes, docs) over to the main repo
 	@src="$(CURRENT_MAKEFILE_DIR)/ThirdParty/ghostty/zig-out/share/ghostty"; \
@@ -31,10 +31,13 @@ sync-ghostty-resources: # Sync ghostty resources (themes, docs) over to the main
 	rsync -a --delete "$$src/" "$$dst/"
 
 build-app: build-ghostty-xcframework # Build the macOS app (Debug)
-	@cd $(CURRENT_MAKEFILE_DIR) && xcodebuild -project supacode.xcodeproj -scheme supacode -configuration Debug build 2>&1 | xcsift -qw
+	xcodebuild -project supacode.xcodeproj -scheme supacode -configuration Debug build 2>&1 | xcsift -qw
 
 run-app: build-app # Build then launch (Debug)
 	@settings="$$(xcodebuild -project supacode.xcodeproj -scheme supacode -configuration Debug -showBuildSettings -json 2>/dev/null)"; \
 	build_dir="$$(echo "$$settings" | jq -r '.[0].buildSettings.BUILT_PRODUCTS_DIR')"; \
 	product="$$(echo "$$settings" | jq -r '.[0].buildSettings.FULL_PRODUCT_NAME')"; \
 	open -n "$$build_dir/$$product"
+
+test: build-ghostty-xcframework
+	xcodebuild test -project supacode.xcodeproj -scheme supacode -destination "platform=macOS" 2>&1 | xcsift -qw

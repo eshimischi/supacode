@@ -113,11 +113,13 @@ final class RepositoryStore {
             do {
                 let worktrees = try await gitClient.worktrees(for: root)
                 let name = repositoryName(from: root)
+                let githubOwner = await gitClient.githubOwner(for: root)
                 let repository = Repository(
                     id: root.standardizedFileURL.path(percentEncoded: false),
                     rootURL: root.standardizedFileURL,
                     name: name,
                     initials: repositoryInitials(from: name),
+                    githubOwner: githubOwner,
                     worktrees: worktrees
                 )
                 loaded.append(repository)

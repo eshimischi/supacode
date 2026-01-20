@@ -11,6 +11,7 @@ struct OpenRepositoryCommands: Commands {
                 repositoryStore.isOpenPanelPresented = true
             }
             .keyboardShortcut(AppShortcuts.openRepository.keyEquivalent, modifiers: AppShortcuts.openRepository.modifiers)
+            .help("Open Repository (\(AppShortcuts.openRepository.display))")
         }
     }
 }

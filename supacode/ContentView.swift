@@ -8,6 +8,7 @@
 import Observation
 import SwiftUI
 import UniformTypeIdentifiers
+import Kingfisher
 
 struct ContentView: View {
     let runtime: GhosttyRuntime
@@ -80,6 +81,7 @@ private struct WorktreeDetailView: View {
     let selectedWorktree: Worktree?
     let terminalStore: WorktreeTerminalStore
     let toggleSidebar: () -> Void
+    @State private var openActionError: OpenActionError?
 
     var body: some View {
         Group {
@@ -94,12 +96,36 @@ private struct WorktreeDetailView: View {
         .navigationTitle(selectedWorktree?.name ?? "Supacode")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button("Sidebar", systemImage: "sidebar.left", action: toggleSidebar)
-                    .help("Toggle sidebar (\(AppShortcuts.toggleSidebar.display))")
-                    .keyboardShortcut(AppShortcuts.toggleSidebar.keyEquivalent, modifiers: AppShortcuts.toggleSidebar.modifiers)
-                Button("Compose", systemImage: "square.and.pencil", action: {})
-                Button("Settings", systemImage: "gearshape", action: {})
+                Menu {
+                    ForEach(OpenWorktreeAction.allCases) { action in
+                        if let shortcut = action.shortcut {
+                            Button(action.title, systemImage: action.systemImage) {
+                                performOpenAction(action)
+                            }
+                            .keyboardShortcut(shortcut.keyEquivalent, modifiers: shortcut.modifiers)
+                            .help(action.helpText)
+                            .disabled(selectedWorktree == nil)
+                        } else {
+                            Button(action.title, systemImage: action.systemImage) {
+                                performOpenAction(action)
+                            }
+                            .help(action.helpText)
+                            .disabled(selectedWorktree == nil)
+                        }
+                    }
+                } label: {
+                    Label("Open", systemImage: "folder")
+                }
+                .help("Open Finder (\(AppShortcuts.openFinder.display))")
+                .disabled(selectedWorktree == nil)
             }
+        }
+        .alert(item: $openActionError) { error in
+            Alert(
+                title: Text(error.title),
+                message: Text(error.message),
+                dismissButton: .default(Text("OK"))
+            )
         }
         .focusedSceneValue(\.newTerminalAction, {
             guard let selectedWorktree else { return }
@@ -109,6 +135,13 @@ private struct WorktreeDetailView: View {
             guard let selectedWorktree else { return }
             terminalStore.closeFocusedTab(in: selectedWorktree)
         })
+    }
+
+    private func performOpenAction(_ action: OpenWorktreeAction) {
+        guard let selectedWorktree else { return }
+        action.perform(with: selectedWorktree) { error in
+            openActionError = error
+        }
     }
 }
 
@@ -144,6 +177,9 @@ private struct SidebarView: View {
                         RepoHeaderRow(
                             name: repository.name,
                             initials: repository.initials,
+                            profileURL: repository.githubOwner.flatMap {
+                                Github.profilePictureURL(username: $0, size: 48)
+                            },
                             isExpanded: expandedRepoIDs.contains(repository.id)
                         )
                     }
@@ -164,6 +200,7 @@ private struct SidebarView: View {
 private struct RepoHeaderRow: View {
     let name: String
     let initials: String
+    let profileURL: URL?
     let isExpanded: Bool
     
     var body: some View {
@@ -172,13 +209,25 @@ private struct RepoHeaderRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             ZStack {
-                Circle()
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(.secondary.opacity(0.2))
-                Text(initials)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if let profileURL {
+                    KFImage(profileURL)
+                        .resizable()
+                        .placeholder {
+                            Text(initials)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .scaledToFill()
+                } else {
+                    Text(initials)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .frame(width: 24, height: 24)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             Text(name)
                 .font(.headline)
         }
@@ -213,12 +262,13 @@ private struct EmptyStateView: View {
                 .font(.title2)
             Text("Open a project or worktree")
                 .font(.headline)
-            Text("Press Cmd+O or click Open to choose a repository.")
+            Text("Press \(AppShortcuts.openRepository.display) or click Open Repository to choose a repository.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Button("Open...") {
+            Button("Open Repository...") {
                 repositoryStore.isOpenPanelPresented = true
             }
+            .help("Open Repository (\(AppShortcuts.openRepository.display))")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
