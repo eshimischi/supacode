@@ -80,22 +80,45 @@ struct ContentView: View {
 private struct SidebarView: View {
     let repositories: [Repository]
     @Binding var selection: Worktree.ID?
+    @State private var expandedRepoIDs: Set<Repository.ID>
+
+    init(repositories: [Repository], selection: Binding<Worktree.ID?>) {
+        self.repositories = repositories
+        _selection = selection
+        _expandedRepoIDs = State(initialValue: Set(repositories.map(\.id)))
+    }
 
     var body: some View {
         List(selection: $selection) {
             ForEach(repositories) { repository in
-                Section {
+                DisclosureGroup(
+                    isExpanded: Binding(
+                        get: { expandedRepoIDs.contains(repository.id) },
+                        set: { isExpanded in
+                            if isExpanded {
+                                expandedRepoIDs.insert(repository.id)
+                            } else {
+                                expandedRepoIDs.remove(repository.id)
+                            }
+                        }
+                    )
+                ) {
                     ForEach(repository.worktrees) { worktree in
                         WorktreeRow(name: worktree.name, detail: worktree.detail)
                             .tag(worktree.id)
                     }
-                } header: {
+                } label: {
                     RepoHeaderRow(name: repository.name, initials: repository.initials)
                 }
             }
         }
         .listStyle(.sidebar)
         .frame(minWidth: 220)
+        .onChange(of: repositories) { _, newValue in
+            let current = Set(newValue.map(\.id))
+            expandedRepoIDs.formUnion(current)
+            expandedRepoIDs = expandedRepoIDs.intersection(current)
+        }
     }
 }
 
