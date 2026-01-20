@@ -25,3 +25,6 @@ See `./docs/swift-rules.md` for Swift/SwiftUI conventions. Key points:
 - Use Peekabo skill to verify UI behavior if necessary.
 - If you want to inspect a swift pm package, clone it to do so.
 
+## Submodules
+- ghostty 
+- git-wt (this is owned by us, we could modify this if needed)
