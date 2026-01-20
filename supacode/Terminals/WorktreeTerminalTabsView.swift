@@ -24,7 +24,7 @@ struct WorktreeTerminalTabsView: View {
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
-                .help("New Terminal")
+                .help("New Terminal (⌘T)")
                 .frame(height: state.controller.configuration.appearance.tabBarHeight)
                 .padding(.trailing)
             }
