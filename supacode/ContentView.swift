@@ -8,11 +8,9 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var filter = ""
-
     var body: some View {
         NavigationSplitView {
-            SidebarView(filter: $filter)
+            SidebarView()
         } detail: {
             EmptyStateView()
                 .navigationTitle("Supacode")
@@ -35,45 +33,71 @@ struct ContentView: View {
 }
 
 private struct SidebarView: View {
-    @Binding var filter: String
+    @State private var isRepoExpanded = true
+    private let worktrees: [Worktree] = [
+        Worktree(name: "khoi/tashkent", detail: "tashkent • 1h ago"),
+        Worktree(name: "khoi/karachi", detail: "karachi • 1h ago")
+    ]
 
     var body: some View {
-        VStack(spacing: 0) {
-            List {
-                Section("Projects") {
-                    ProjectRow(name: "suparepo", detail: "main")
+        List {
+            DisclosureGroup(isExpanded: $isRepoExpanded) {
+                ForEach(worktrees) { worktree in
+                    WorktreeRow(name: worktree.name, detail: worktree.detail)
                 }
+            } label: {
+                RepoHeaderRow(name: "supacode", initials: "S")
             }
-            .listStyle(.sidebar)
-            Divider()
-            HStack(spacing: 8) {
-                Button(action: {}) {
-                    Image(systemName: "plus")
-                }
-                .buttonStyle(.borderless)
-                TextField("Filter", text: $filter)
-                    .textFieldStyle(.roundedBorder)
-            }
-            .padding(8)
-            .background(Color(nsColor: .windowBackgroundColor))
         }
+        .listStyle(.sidebar)
         .frame(minWidth: 220)
     }
 }
 
-private struct ProjectRow: View {
+private struct RepoHeaderRow: View {
+    let name: String
+    let initials: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(.secondary.opacity(0.2))
+                Text(initials)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: 24, height: 24)
+            Text(name)
+                .font(.headline)
+        }
+    }
+}
+
+private struct WorktreeRow: View {
     let name: String
     let detail: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(name)
-            Text(detail)
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "arrow.triangle.branch")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
-        .padding(.vertical, 4)
     }
+}
+
+private struct Worktree: Identifiable {
+    let id = UUID()
+    let name: String
+    let detail: String
 }
 
 private struct EmptyStateView: View {
