@@ -28,10 +28,9 @@ struct ContentView: View {
             SidebarView(
                 repositories: repositoryStore.repositories,
                 selection: $repositoryStore.selectedWorktreeID,
-                canCreateWorktree: repositoryStore.canCreateWorktree,
-                createWorktree: {
+                createWorktree: { repository in
                     Task {
-                        await repositoryStore.createRandomWorktree()
+                        await repositoryStore.createRandomWorktree(in: repository)
                     }
                 }
             )
@@ -163,19 +162,16 @@ private struct WorktreeDetailView: View {
 private struct SidebarView: View {
     let repositories: [Repository]
     @Binding var selection: Worktree.ID?
-    let canCreateWorktree: Bool
-    let createWorktree: () -> Void
+    let createWorktree: (Repository) -> Void
     @State private var expandedRepoIDs: Set<Repository.ID>
 
     init(
         repositories: [Repository],
         selection: Binding<Worktree.ID?>,
-        canCreateWorktree: Bool,
-        createWorktree: @escaping () -> Void
+        createWorktree: @escaping (Repository) -> Void
     ) {
         self.repositories = repositories
         _selection = selection
-        self.canCreateWorktree = canCreateWorktree
         self.createWorktree = createWorktree
         _expandedRepoIDs = State(initialValue: Set(repositories.map(\.id)))
     }
@@ -191,23 +187,34 @@ private struct SidebarView: View {
                         }
                     }
                 } header: {
-                    Button {
-                        if expandedRepoIDs.contains(repository.id) {
-                            expandedRepoIDs.remove(repository.id)
-                        } else {
-                            expandedRepoIDs.insert(repository.id)
+                    HStack {
+                        Button {
+                            if expandedRepoIDs.contains(repository.id) {
+                                expandedRepoIDs.remove(repository.id)
+                            } else {
+                                expandedRepoIDs.insert(repository.id)
+                            }
+                        } label: {
+                            RepoHeaderRow(
+                                name: repository.name,
+                                initials: repository.initials,
+                                profileURL: repository.githubOwner.flatMap {
+                                    Github.profilePictureURL(username: $0, size: 48)
+                                },
+                                isExpanded: expandedRepoIDs.contains(repository.id)
+                            )
                         }
-                    } label: {
-                        RepoHeaderRow(
-                            name: repository.name,
-                            initials: repository.initials,
-                            profileURL: repository.githubOwner.flatMap {
-                                Github.profilePictureURL(username: $0, size: 48)
-                            },
-                            isExpanded: expandedRepoIDs.contains(repository.id)
-                        )
+                        .buttonStyle(.plain)
+                        Spacer()
+                        Button("New Worktree", systemImage: "plus") {
+                            createWorktree(repository)
+                        }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.primary)
+                        .padding(.trailing, 6)
+                        .help("New Worktree (\(AppShortcuts.newWorktree.display))")
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -217,16 +224,6 @@ private struct SidebarView: View {
             let current = Set(newValue.map(\.id))
             expandedRepoIDs.formUnion(current)
             expandedRepoIDs = expandedRepoIDs.intersection(current)
-        }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("New Worktree", systemImage: "plus") {
-                    createWorktree()
-                }
-                .keyboardShortcut(AppShortcuts.newWorktree.keyEquivalent, modifiers: AppShortcuts.newWorktree.modifiers)
-                .help("New Worktree (\(AppShortcuts.newWorktree.display))")
-                .disabled(!canCreateWorktree)
-            }
         }
     }
 }
@@ -264,6 +261,7 @@ private struct RepoHeaderRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             Text(name)
                 .font(.headline)
+                .foregroundStyle(.primary)
         }
     }
 }

@@ -104,6 +104,11 @@ final class RepositoryStore {
             return
         }
 
+        await createRandomWorktree(in: repository)
+    }
+
+    func createRandomWorktree(in repository: Repository) async {
+        createWorktreeError = nil
         do {
             let branchNames = try await gitClient.localBranchNames(for: repository.rootURL)
             let worktreeNames = Set(repository.worktrees.map { $0.name.lowercased() })
