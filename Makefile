@@ -1,3 +1,11 @@
+# Sensible defaults
+.ONESHELL:
+SHELL := bash
+.SHELLFLAGS := -e -u -c -o pipefail
+.DELETE_ON_ERROR:
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
+
 # Derived values (DO NOT TOUCH).
 CURRENT_MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_MAKEFILE_DIR := $(patsubst %/,%,$(dir $(CURRENT_MAKEFILE_PATH)))
