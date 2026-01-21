@@ -24,9 +24,11 @@ struct ContentView: View {
     var body: some View {
         @Bindable var repositoryStore = repositoryStore
         let selectedWorktree = repositoryStore.worktree(for: repositoryStore.selectedWorktreeID)
+        let pendingWorktree = repositoryStore.pendingWorktree(for: repositoryStore.selectedWorktreeID)
         NavigationSplitView(columnVisibility: $sidebarVisibility) {
             SidebarView(
                 repositories: repositoryStore.repositories,
+                pendingWorktrees: repositoryStore.pendingWorktrees,
                 selection: $repositoryStore.selectedWorktreeID,
                 createWorktree: { repository in
                     Task {
@@ -37,6 +39,7 @@ struct ContentView: View {
         } detail: {
             WorktreeDetailView(
                 selectedWorktree: selectedWorktree,
+                pendingWorktree: pendingWorktree,
                 terminalStore: terminalStore,
                 toggleSidebar: toggleSidebar
             )
@@ -95,6 +98,7 @@ struct ContentView: View {
 
 private struct WorktreeDetailView: View {
     let selectedWorktree: Worktree?
+    let pendingWorktree: PendingWorktree?
     let terminalStore: WorktreeTerminalStore
     let toggleSidebar: () -> Void
     @State private var openActionError: OpenActionError?
@@ -105,11 +109,13 @@ private struct WorktreeDetailView: View {
                 WorktreeTerminalTabsView(worktree: selectedWorktree, store: terminalStore)
                     .id(selectedWorktree.id)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let pendingWorktree {
+                WorktreeLoadingView(name: pendingWorktree.name)
             } else {
                 EmptyStateView()
             }
         }
-        .navigationTitle(selectedWorktree?.name ?? "Supacode")
+        .navigationTitle(selectedWorktree?.name ?? pendingWorktree?.name ?? "Supacode")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Menu {
@@ -161,19 +167,24 @@ private struct WorktreeDetailView: View {
 
 private struct SidebarView: View {
     let repositories: [Repository]
+    let pendingWorktrees: [PendingWorktree]
     @Binding var selection: Worktree.ID?
     let createWorktree: (Repository) -> Void
     @State private var expandedRepoIDs: Set<Repository.ID>
 
     init(
         repositories: [Repository],
+        pendingWorktrees: [PendingWorktree],
         selection: Binding<Worktree.ID?>,
         createWorktree: @escaping (Repository) -> Void
     ) {
         self.repositories = repositories
+        self.pendingWorktrees = pendingWorktrees
         _selection = selection
         self.createWorktree = createWorktree
-        _expandedRepoIDs = State(initialValue: Set(repositories.map(\.id)))
+        let repositoryIDs = Set(repositories.map(\.id))
+        let pendingRepositoryIDs = Set(pendingWorktrees.map(\.repositoryID))
+        _expandedRepoIDs = State(initialValue: repositoryIDs.union(pendingRepositoryIDs))
     }
 
     var body: some View {
@@ -181,8 +192,12 @@ private struct SidebarView: View {
             ForEach(repositories) { repository in
                 Section {
                     if expandedRepoIDs.contains(repository.id) {
+                        ForEach(pendingWorktrees.filter { $0.repositoryID == repository.id }) { pendingWorktree in
+                            WorktreeRow(name: pendingWorktree.name, detail: pendingWorktree.detail, isLoading: true)
+                                .tag(pendingWorktree.id)
+                        }
                         ForEach(repository.worktrees) { worktree in
-                            WorktreeRow(name: worktree.name, detail: worktree.detail)
+                            WorktreeRow(name: worktree.name, detail: worktree.detail, isLoading: false)
                                 .tag(worktree.id)
                         }
                     }
@@ -224,6 +239,10 @@ private struct SidebarView: View {
             let current = Set(newValue.map(\.id))
             expandedRepoIDs.formUnion(current)
             expandedRepoIDs = expandedRepoIDs.intersection(current)
+        }
+        .onChange(of: pendingWorktrees) { _, newValue in
+            let repositoryIDs = Set(newValue.map(\.repositoryID))
+            expandedRepoIDs.formUnion(repositoryIDs)
         }
     }
 }
@@ -269,19 +288,45 @@ private struct RepoHeaderRow: View {
 private struct WorktreeRow: View {
     let name: String
     let detail: String
+    let isLoading: Bool
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Image(systemName: "arrow.triangle.branch")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name)
-                Text(detail)
+            ZStack {
+                Image(systemName: "arrow.triangle.branch")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .opacity(isLoading ? 0 : 1)
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name)
+                Text(detail.isEmpty ? " " : detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .opacity(detail.isEmpty ? 0 : 1)
             }
         }
+    }
+}
+
+private struct WorktreeLoadingView: View {
+    let name: String
+
+    var body: some View {
+        VStack {
+            ProgressView()
+            Text(name)
+                .font(.headline)
+            Text("We will open the terminal when it's ready.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .multilineTextAlignment(.center)
     }
 }
 

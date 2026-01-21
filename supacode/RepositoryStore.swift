@@ -13,6 +13,7 @@ final class RepositoryStore {
     var isOpenPanelPresented = false
     var openError: OpenRepositoryError?
     var createWorktreeError: CreateWorktreeError?
+    var pendingWorktrees: [PendingWorktree] = []
 
     var canCreateWorktree: Bool {
         if repositories.isEmpty {
@@ -37,9 +38,11 @@ final class RepositoryStore {
         let roots = rootPaths.map { URL(fileURLWithPath: $0) }
         let loaded = await loadRepositories(for: roots)
         repositories = loaded
+        let repositoryIDs = Set(loaded.map(\.id))
+        pendingWorktrees = pendingWorktrees.filter { repositoryIDs.contains($0.repositoryID) }
         let persistedRoots = loaded.map { $0.rootURL.path(percentEncoded: false) }
         persistRootPaths(persistedRoots)
-        if worktree(for: selectedWorktreeID) == nil {
+        if !isSelectionValid(selectedWorktreeID) {
             selectedWorktreeID = nil
         }
     }
@@ -68,6 +71,8 @@ final class RepositoryStore {
         let mergedRoots = uniqueRootPaths(mergedPaths).map { URL(fileURLWithPath: $0) }
         let loaded = await loadRepositories(for: mergedRoots)
         repositories = loaded
+        let repositoryIDs = Set(loaded.map(\.id))
+        pendingWorktrees = pendingWorktrees.filter { repositoryIDs.contains($0.repositoryID) }
         let persistedRoots = loaded.map { $0.rootURL.path(percentEncoded: false) }
         persistRootPaths(persistedRoots)
 
@@ -80,7 +85,7 @@ final class RepositoryStore {
             )
         }
 
-        if worktree(for: selectedWorktreeID) == nil {
+        if !isSelectionValid(selectedWorktreeID) {
             selectedWorktreeID = nil
         }
     }
@@ -109,11 +114,23 @@ final class RepositoryStore {
 
     func createRandomWorktree(in repository: Repository) async {
         createWorktreeError = nil
+        let previousSelection = selectedWorktreeID
+        let pendingID = "pending:\(UUID().uuidString)"
+        let pendingWorktree = PendingWorktree(
+            id: pendingID,
+            repositoryID: repository.id,
+            name: "Creating worktree...",
+            detail: ""
+        )
+        pendingWorktrees.append(pendingWorktree)
+        selectedWorktreeID = pendingID
         do {
             let branchNames = try await gitClient.localBranchNames(for: repository.rootURL)
             let worktreeNames = Set(repository.worktrees.map { $0.name.lowercased() })
             let existing = worktreeNames.union(branchNames)
             guard let name = WorktreeNameGenerator.nextName(excluding: existing) else {
+                removePendingWorktree(id: pendingID)
+                restoreSelection(previousSelection, whenSelectionIs: pendingID)
                 createWorktreeError = CreateWorktreeError(
                     id: UUID(),
                     title: "No available worktree names",
@@ -125,8 +142,13 @@ final class RepositoryStore {
             let newWorktree = try await gitClient.createWorktree(named: name, in: repository.rootURL)
             let roots = repositories.map(\.rootURL)
             repositories = await loadRepositories(for: roots)
-            selectedWorktreeID = newWorktree.id
+            removePendingWorktree(id: pendingID)
+            if selectedWorktreeID == pendingID {
+                selectedWorktreeID = newWorktree.id
+            }
         } catch {
+            removePendingWorktree(id: pendingID)
+            restoreSelection(previousSelection, whenSelectionIs: pendingID)
             createWorktreeError = CreateWorktreeError(
                 id: UUID(),
                 title: "Unable to create worktree",
@@ -149,8 +171,20 @@ final class RepositoryStore {
         return nil
     }
 
+    func pendingWorktree(for id: Worktree.ID?) -> PendingWorktree? {
+        guard let id else { return nil }
+        return pendingWorktrees.first(where: { $0.id == id })
+    }
+
+    func pendingWorktrees(in repository: Repository) -> [PendingWorktree] {
+        pendingWorktrees.filter { $0.repositoryID == repository.id }
+    }
+
     private func repositoryForWorktreeCreation() -> Repository? {
         if let selectedWorktreeID {
+            if let pending = pendingWorktree(for: selectedWorktreeID) {
+                return repositories.first(where: { $0.id == pending.repositoryID })
+            }
             for repository in repositories {
                 if repository.worktrees.contains(where: { $0.id == selectedWorktreeID }) {
                     return repository
@@ -161,6 +195,29 @@ final class RepositoryStore {
             return repositories.first
         }
         return nil
+    }
+
+    private func isSelectionValid(_ id: Worktree.ID?) -> Bool {
+        if worktree(for: id) != nil {
+            return true
+        }
+        if pendingWorktree(for: id) != nil {
+            return true
+        }
+        return false
+    }
+
+    private func removePendingWorktree(id: String) {
+        pendingWorktrees.removeAll { $0.id == id }
+    }
+
+    private func restoreSelection(_ id: Worktree.ID?, whenSelectionIs pendingID: Worktree.ID) {
+        guard selectedWorktreeID == pendingID else { return }
+        if isSelectionValid(id) {
+            selectedWorktreeID = id
+        } else {
+            selectedWorktreeID = nil
+        }
     }
 
     private func loadRootPaths() -> [String] {

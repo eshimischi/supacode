@@ -35,12 +35,26 @@ struct GitClient {
         }
         let data = Data(trimmed.utf8)
         let entries = try JSONDecoder().decode([GitWtWorktreeEntry].self, from: data)
-        return entries.map { entry in
+        let worktrees = entries.enumerated().map { index, entry -> (worktree: Worktree, createdAt: Date, index: Int) in
             let worktreeURL = URL(fileURLWithPath: entry.path).standardizedFileURL
             let detail = Self.relativePath(from: baseDirectory, to: worktreeURL)
             let id = worktreeURL.path(percentEncoded: false)
-            return Worktree(id: id, name: entry.branch, detail: detail, workingDirectory: worktreeURL)
+            let resourceValues = try? worktreeURL.resourceValues(forKeys: [.creationDateKey, .contentModificationDateKey])
+            let createdAt = resourceValues?.creationDate ?? resourceValues?.contentModificationDate ?? .distantPast
+            return (
+                worktree: Worktree(id: id, name: entry.branch, detail: detail, workingDirectory: worktreeURL),
+                createdAt: createdAt,
+                index: index
+            )
         }
+        return worktrees
+            .sorted { lhs, rhs in
+                if lhs.createdAt != rhs.createdAt {
+                    return lhs.createdAt > rhs.createdAt
+                }
+                return lhs.index < rhs.index
+            }
+            .map(\.worktree)
     }
 
     nonisolated func localBranchNames(for repoRoot: URL) async throws -> Set<String> {
