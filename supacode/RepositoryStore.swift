@@ -17,6 +17,7 @@ final class RepositoryStore {
     var createWorktreeError: CreateWorktreeError?
     var removeWorktreeError: RemoveWorktreeError?
     var pendingWorktrees: [PendingWorktree] = []
+    var deletingWorktreeIDs: Set<Worktree.ID> = []
     private(set) var pinnedWorktreeIDs: [Worktree.ID] = []
 
     var canCreateWorktree: Bool {
@@ -175,6 +176,96 @@ final class RepositoryStore {
         pendingWorktrees.filter { $0.repositoryID == repository.id }
     }
 
+    func worktreeRows(in repository: Repository) -> [WorktreeRowModel] {
+        let ordered = orderedWorktrees(in: repository)
+        let pinnedIDs = Set(pinnedWorktreeIDs)
+        let pinnedWorktrees = ordered.filter { pinnedIDs.contains($0.id) }
+        let unpinnedWorktrees = ordered.filter { !pinnedIDs.contains($0.id) }
+        let pendingEntries = pendingWorktrees.filter { $0.repositoryID == repository.id }
+        var rows: [WorktreeRowModel] = []
+        for worktree in pinnedWorktrees {
+            let isDeleting = deletingWorktreeIDs.contains(worktree.id)
+            rows.append(
+                WorktreeRowModel(
+                    id: worktree.id,
+                    repositoryID: repository.id,
+                    name: worktree.name,
+                    detail: worktree.detail,
+                    isPinned: true,
+                    isPending: false,
+                    isDeleting: isDeleting,
+                    isRemovable: !isDeleting
+                )
+            )
+        }
+        for pending in pendingEntries {
+            rows.append(
+                WorktreeRowModel(
+                    id: pending.id,
+                    repositoryID: pending.repositoryID,
+                    name: pending.name,
+                    detail: pending.detail,
+                    isPinned: false,
+                    isPending: true,
+                    isDeleting: false,
+                    isRemovable: false
+                )
+            )
+        }
+        for worktree in unpinnedWorktrees {
+            let isDeleting = deletingWorktreeIDs.contains(worktree.id)
+            rows.append(
+                WorktreeRowModel(
+                    id: worktree.id,
+                    repositoryID: repository.id,
+                    name: worktree.name,
+                    detail: worktree.detail,
+                    isPinned: false,
+                    isPending: false,
+                    isDeleting: isDeleting,
+                    isRemovable: !isDeleting
+                )
+            )
+        }
+        return rows
+    }
+
+    func selectedRow(for id: Worktree.ID?) -> WorktreeRowModel? {
+        guard let id else { return nil }
+        if let pending = pendingWorktree(for: id) {
+            return WorktreeRowModel(
+                id: pending.id,
+                repositoryID: pending.repositoryID,
+                name: pending.name,
+                detail: pending.detail,
+                isPinned: false,
+                isPending: true,
+                isDeleting: false,
+                isRemovable: false
+            )
+        }
+        for repository in repositories {
+            if let worktree = repository.worktrees.first(where: { $0.id == id }) {
+                let isDeleting = deletingWorktreeIDs.contains(worktree.id)
+                return WorktreeRowModel(
+                    id: worktree.id,
+                    repositoryID: repository.id,
+                    name: worktree.name,
+                    detail: worktree.detail,
+                    isPinned: pinnedWorktreeIDs.contains(worktree.id),
+                    isPending: false,
+                    isDeleting: isDeleting,
+                    isRemovable: !isDeleting
+                )
+            }
+        }
+        return nil
+    }
+
+    func repositoryName(for id: Repository.ID) -> String? {
+        repositories.first(where: { $0.id == id })?.name
+    }
+
     func orderedWorktrees(in repository: Repository) -> [Worktree] {
         if pinnedWorktreeIDs.isEmpty {
             return repository.worktrees
@@ -224,6 +315,11 @@ final class RepositoryStore {
 
     func removeWorktree(_ worktree: Worktree, from repository: Repository, force: Bool) async {
         removeWorktreeError = nil
+        if deletingWorktreeIDs.contains(worktree.id) {
+            return
+        }
+        deletingWorktreeIDs.insert(worktree.id)
+        defer { deletingWorktreeIDs.remove(worktree.id) }
         let selectionWasRemoved = selectedWorktreeID == worktree.id
         let nextSelection = selectionWasRemoved ? nextWorktreeID(afterRemoving: worktree) : nil
         do {
@@ -261,13 +357,7 @@ final class RepositoryStore {
     }
 
     private func isSelectionValid(_ id: Worktree.ID?) -> Bool {
-        if worktree(for: id) != nil {
-            return true
-        }
-        if pendingWorktree(for: id) != nil {
-            return true
-        }
-        return false
+        selectedRow(for: id) != nil
     }
 
     private func removePendingWorktree(id: String) {
