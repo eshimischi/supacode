@@ -305,6 +305,15 @@ final class GhosttySurfaceBridge {
       case GHOSTTY_KEY_TABLE_ACTIVATE:
         state.keyTableName = string(
           from: table.value.activate.name, length: table.value.activate.len)
+        state.keyTableDepth += 1
+      case GHOSTTY_KEY_TABLE_DEACTIVATE:
+        state.keyTableName = nil
+        if state.keyTableDepth > 0 {
+          state.keyTableDepth -= 1
+        }
+      case GHOSTTY_KEY_TABLE_DEACTIVATE_ALL:
+        state.keyTableName = nil
+        state.keyTableDepth = 0
       default:
         state.keyTableName = nil
       }
@@ -340,11 +349,6 @@ final class GhosttySurfaceBridge {
     case GHOSTTY_ACTION_PRESENT_TERMINAL:
       state.presentTerminalCount += 1
       return true
-
-    case GHOSTTY_ACTION_CLOSE_TAB:
-      state.closeTabMode = action.action.close_tab_mode
-      return true
-
     case GHOSTTY_ACTION_QUIT_TIMER:
       state.quitTimer = action.action.quit_timer
       return true

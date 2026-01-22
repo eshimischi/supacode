@@ -5,11 +5,13 @@ struct WorktreeTerminalTabsView: View {
   let worktree: Worktree
   let store: WorktreeTerminalStore
   @Environment(RepositoryStore.self) private var repositoryStore
+  @Environment(GhosttyShortcutStore.self) private var ghosttyShortcuts
 
   var body: some View {
     let state = store.state(for: worktree) {
       repositoryStore.consumeSetupScript(for: worktree.id)
     }
+    let newTabShortcut = ghosttyShortcuts.display(for: "new_tab")
     ZStack(alignment: .topLeading) {
       BonsplitView(
         controller: state.controller,
@@ -28,7 +30,7 @@ struct WorktreeTerminalTabsView: View {
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
-        .help("New Terminal (\(AppShortcuts.newTerminal.display))")
+        .help(helpText("New Terminal", shortcut: newTabShortcut))
         .frame(height: state.controller.configuration.appearance.tabBarHeight)
         .padding(.trailing)
       }
@@ -36,5 +38,10 @@ struct WorktreeTerminalTabsView: View {
     .onAppear {
       state.ensureInitialTab()
     }
+  }
+
+  private func helpText(_ title: String, shortcut: String?) -> String {
+    guard let shortcut else { return "\(title) (no shortcut)" }
+    return "\(title) (\(shortcut))"
   }
 }

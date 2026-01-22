@@ -42,22 +42,18 @@ struct AppShortcut {
 }
 
 enum AppShortcuts {
-  static let newTerminal = AppShortcut(key: "t", modifiers: .command)
   static let newWorktree = AppShortcut(key: "n", modifiers: .command)
   static let openFinder = AppShortcut(key: "o", modifiers: .command)
   static let copyPath = AppShortcut(key: "c", modifiers: [.command, .shift])
   static let openRepository = AppShortcut(key: "o", modifiers: [.command, .shift])
   static let toggleSidebar = AppShortcut(key: "[", modifiers: .command)
-  static let closeTab = AppShortcut(key: "w", modifiers: .command)
   static let checkForUpdates = AppShortcut(key: "u", modifiers: .command)
   static let all: [AppShortcut] = [
-    newTerminal,
     newWorktree,
     openFinder,
     copyPath,
     openRepository,
     toggleSidebar,
-    closeTab,
     checkForUpdates,
   ]
 }

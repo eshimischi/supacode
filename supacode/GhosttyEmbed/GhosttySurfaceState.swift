@@ -42,6 +42,7 @@ final class GhosttySurfaceState {
   var keySequenceTrigger: ghostty_input_trigger_s?
   var keyTableTag: ghostty_action_key_table_tag_e?
   var keyTableName: String?
+  var keyTableDepth: Int = 0
   var secureInput: ghostty_action_secure_input_e?
   var floatWindow: ghostty_action_float_window_e?
   var reloadConfigSoft: Bool?
@@ -52,6 +53,5 @@ final class GhosttySurfaceState {
   var resetWindowSizeCount: Int = 0
   var desktopNotificationTitle: String?
   var desktopNotificationBody: String?
-  var closeTabMode: ghostty_action_close_tab_mode_e?
   var quitTimer: ghostty_action_quit_timer_e?
 }

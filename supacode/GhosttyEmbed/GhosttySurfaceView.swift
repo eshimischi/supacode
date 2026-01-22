@@ -11,6 +11,7 @@ final class GhosttySurfaceView: NSView, Identifiable {
   private var trackingArea: NSTrackingArea?
   private var lastBackingSize: CGSize = .zero
   private var pendingFocus = false
+  private var lastPerformKeyEvent: TimeInterval?
   private var currentCursor: NSCursor = .iBeam
   var onFocusChange: ((Bool) -> Void)?
 
@@ -327,6 +328,12 @@ final class GhosttySurfaceView: NSView, Identifiable {
         return ghostty_surface_key_is_binding(surface, key, &flags)
       }
       if isBinding {
+        if shouldAttemptMenu(for: flags),
+          let menu = NSApp.mainMenu,
+          menu.performKeyEquivalent(with: event)
+        {
+          return true
+        }
         return text.withCString { ptr in
           key.text = ptr
           return ghostty_surface_key(surface, key)
@@ -336,6 +343,12 @@ final class GhosttySurfaceView: NSView, Identifiable {
       var flags = ghostty_binding_flags_e(0)
       key.text = nil
       if ghostty_surface_key_is_binding(surface, key, &flags) {
+        if shouldAttemptMenu(for: flags),
+          let menu = NSApp.mainMenu,
+          menu.performKeyEquivalent(with: event)
+        {
+          return true
+        }
         return ghostty_surface_key(surface, key)
       }
     }
@@ -384,7 +397,46 @@ final class GhosttySurfaceView: NSView, Identifiable {
       }
     }
 
+    if event.timestamp == 0 {
+      return false
+    }
+    if !event.modifierFlags.contains(.command) && !event.modifierFlags.contains(.control) {
+      lastPerformKeyEvent = nil
+      return false
+    }
+    if let lastPerformKeyEvent {
+      self.lastPerformKeyEvent = nil
+      if lastPerformKeyEvent == event.timestamp {
+        let equivalent = event.characters ?? ""
+        if let finalEvent = NSEvent.keyEvent(
+          with: .keyDown,
+          location: event.locationInWindow,
+          modifierFlags: event.modifierFlags,
+          timestamp: event.timestamp,
+          windowNumber: event.windowNumber,
+          context: nil,
+          characters: equivalent,
+          charactersIgnoringModifiers: equivalent,
+          isARepeat: event.isARepeat,
+          keyCode: event.keyCode
+        ) {
+          sendKey(event: finalEvent, action: GHOSTTY_ACTION_PRESS)
+          return true
+        }
+      }
+    }
+    lastPerformKeyEvent = event.timestamp
     return false
+  }
+
+  private func shouldAttemptMenu(for flags: ghostty_binding_flags_e) -> Bool {
+    if bridge.state.keySequenceActive == true { return false }
+    if bridge.state.keyTableDepth > 0 { return false }
+    let raw = flags.rawValue
+    let isAll = (raw & GHOSTTY_BINDING_FLAGS_ALL.rawValue) != 0
+    let isPerformable = (raw & GHOSTTY_BINDING_FLAGS_PERFORMABLE.rawValue) != 0
+    let isConsumed = (raw & GHOSTTY_BINDING_FLAGS_CONSUMED.rawValue) != 0
+    return !isAll && !isPerformable && isConsumed
   }
 
   @IBAction func copy(_ sender: Any?) {
@@ -422,7 +474,7 @@ final class GhosttySurfaceView: NSView, Identifiable {
     }
   }
 
-  private func performBindingAction(_ action: String) {
+  func performBindingAction(_ action: String) {
     guard let surface else { return }
     _ = action.withCString { ptr in
       ghostty_surface_binding_action(surface, ptr, UInt(action.lengthOfBytes(using: .utf8)))

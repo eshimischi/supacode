@@ -213,6 +213,13 @@ private struct WorktreeDetailView: View {
         terminalStore.closeFocusedTab(in: selectedWorktree)
       }
     )
+    .focusedSceneValue(
+      \.closeSurfaceAction,
+      {
+        guard let selectedWorktree else { return }
+        terminalStore.closeFocusedSurface(in: selectedWorktree)
+      }
+    )
   }
 
   private func performOpenAction(_ action: OpenWorktreeAction) {

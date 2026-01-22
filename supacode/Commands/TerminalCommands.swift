@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct TerminalCommands: Commands {
+  let ghosttyShortcuts: GhosttyShortcutStore
   @FocusedValue(\.newTerminalAction) private var newTerminalAction
+  @FocusedValue(\.closeSurfaceAction) private var closeSurfaceAction
   @FocusedValue(\.closeTabAction) private var closeTabAction
 
   var body: some Commands {
@@ -9,15 +11,20 @@ struct TerminalCommands: Commands {
       Button("New Terminal") {
         newTerminalAction?()
       }
-      .keyboardShortcut(
-        AppShortcuts.newTerminal.keyEquivalent, modifiers: AppShortcuts.newTerminal.modifiers
-      )
+      .modifier(KeyboardShortcutModifier(shortcut: ghosttyShortcuts.keyboardShortcut(for: "new_tab")))
       .disabled(newTerminalAction == nil)
+      Button("Close") {
+        closeSurfaceAction?()
+      }
+      .modifier(
+        KeyboardShortcutModifier(shortcut: ghosttyShortcuts.keyboardShortcut(for: "close_surface"))
+      )
+      .disabled(closeSurfaceAction == nil)
       Button("Close Tab") {
         closeTabAction?()
       }
-      .keyboardShortcut(
-        AppShortcuts.closeTab.keyEquivalent, modifiers: AppShortcuts.closeTab.modifiers
+      .modifier(
+        KeyboardShortcutModifier(shortcut: ghosttyShortcuts.keyboardShortcut(for: "close_tab"))
       )
       .disabled(closeTabAction == nil)
     }
@@ -35,6 +42,17 @@ extension FocusedValues {
   }
 }
 
+private struct CloseSurfaceActionKey: FocusedValueKey {
+  typealias Value = () -> Void
+}
+
+extension FocusedValues {
+  var closeSurfaceAction: (() -> Void)? {
+    get { self[CloseSurfaceActionKey.self] }
+    set { self[CloseSurfaceActionKey.self] = newValue }
+  }
+}
+
 private struct CloseTabActionKey: FocusedValueKey {
   typealias Value = () -> Void
 }
@@ -43,5 +61,17 @@ extension FocusedValues {
   var closeTabAction: (() -> Void)? {
     get { self[CloseTabActionKey.self] }
     set { self[CloseTabActionKey.self] = newValue }
+  }
+}
+
+private struct KeyboardShortcutModifier: ViewModifier {
+  let shortcut: KeyboardShortcut?
+
+  func body(content: Content) -> some View {
+    if let shortcut {
+      content.keyboardShortcut(shortcut)
+    } else {
+      content
+    }
   }
 }

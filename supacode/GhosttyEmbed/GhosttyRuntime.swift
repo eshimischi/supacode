@@ -1,11 +1,13 @@
 import AppKit
 import GhosttyKit
+import SwiftUI
 import UniformTypeIdentifiers
 
 final class GhosttyRuntime {
   private var config: ghostty_config_t?
   private(set) var app: ghostty_app_t?
   private var observers: [NSObjectProtocol] = []
+  var onConfigChange: (() -> Void)?
 
   init() {
     guard let config = ghostty_config_new() else {
@@ -108,6 +110,11 @@ final class GhosttyRuntime {
     return Unmanaged<GhosttyRuntime>.fromOpaque(userdata).takeUnretainedValue()
   }
 
+  private static func runtime(fromApp app: ghostty_app_t) -> GhosttyRuntime? {
+    guard let userdata = ghostty_app_userdata(app) else { return nil }
+    return runtime(from: userdata)
+  }
+
   private static func surfaceBridge(fromUserdata userdata: UnsafeMutableRawPointer?)
     -> GhosttySurfaceBridge?
   {
@@ -132,6 +139,15 @@ final class GhosttyRuntime {
   private static func action(
     _ app: ghostty_app_t, target: ghostty_target_s, action: ghostty_action_s
   ) -> Bool {
+    if action.tag == GHOSTTY_ACTION_CONFIG_CHANGE,
+      let runtime = runtime(fromApp: app)
+    {
+      let config = action.action.config_change.config
+      Task { @MainActor in
+        runtime.updateConfig(config)
+        runtime.onConfigChange?()
+      }
+    }
     guard target.tag == GHOSTTY_TARGET_SURFACE else { return false }
     guard let surface = target.target.surface else { return false }
     guard let bridge = surfaceBridge(fromSurface: surface) else { return false }
@@ -211,6 +227,64 @@ final class GhosttyRuntime {
     guard let bridge = surfaceBridge(fromUserdata: userdata) else { return }
     bridge.closeSurface(processAlive: processAlive)
   }
+
+  func updateConfig(_ config: ghostty_config_t?) {
+    guard let config else { return }
+    guard let clone = ghostty_config_clone(config) else { return }
+    if let existing = self.config {
+      ghostty_config_free(existing)
+    }
+    self.config = clone
+  }
+
+  func keyboardShortcut(for action: String) -> KeyboardShortcut? {
+    guard let config else { return nil }
+    let trigger = ghostty_config_trigger(config, action, UInt(action.lengthOfBytes(using: .utf8)))
+    return Self.keyboardShortcut(for: trigger)
+  }
+
+  private static func keyboardShortcut(for trigger: ghostty_input_trigger_s) -> KeyboardShortcut? {
+    let key: KeyEquivalent
+    switch trigger.tag {
+    case GHOSTTY_TRIGGER_PHYSICAL:
+      guard let equiv = keyToEquivalent[trigger.key.physical] else { return nil }
+      key = equiv
+    case GHOSTTY_TRIGGER_UNICODE:
+      guard let scalar = UnicodeScalar(trigger.key.unicode) else { return nil }
+      key = KeyEquivalent(Character(scalar))
+    case GHOSTTY_TRIGGER_CATCH_ALL:
+      return nil
+    default:
+      return nil
+    }
+    return KeyboardShortcut(key, modifiers: eventModifiers(mods: trigger.mods))
+  }
+
+  private static func eventModifiers(mods: ghostty_input_mods_e) -> EventModifiers {
+    var flags: EventModifiers = []
+    if mods.rawValue & GHOSTTY_MODS_SHIFT.rawValue != 0 { flags.insert(.shift) }
+    if mods.rawValue & GHOSTTY_MODS_CTRL.rawValue != 0 { flags.insert(.control) }
+    if mods.rawValue & GHOSTTY_MODS_ALT.rawValue != 0 { flags.insert(.option) }
+    if mods.rawValue & GHOSTTY_MODS_SUPER.rawValue != 0 { flags.insert(.command) }
+    return flags
+  }
+
+  private static let keyToEquivalent: [ghostty_input_key_e: KeyEquivalent] = [
+    GHOSTTY_KEY_ARROW_UP: .upArrow,
+    GHOSTTY_KEY_ARROW_DOWN: .downArrow,
+    GHOSTTY_KEY_ARROW_LEFT: .leftArrow,
+    GHOSTTY_KEY_ARROW_RIGHT: .rightArrow,
+    GHOSTTY_KEY_HOME: .home,
+    GHOSTTY_KEY_END: .end,
+    GHOSTTY_KEY_DELETE: .delete,
+    GHOSTTY_KEY_PAGE_UP: .pageUp,
+    GHOSTTY_KEY_PAGE_DOWN: .pageDown,
+    GHOSTTY_KEY_ESCAPE: .escape,
+    GHOSTTY_KEY_ENTER: .return,
+    GHOSTTY_KEY_TAB: .tab,
+    GHOSTTY_KEY_BACKSPACE: .delete,
+    GHOSTTY_KEY_SPACE: .space,
+  ]
 }
 
 extension NSPasteboard.PasteboardType {

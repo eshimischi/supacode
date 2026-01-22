@@ -26,6 +26,7 @@ private enum GhosttyCLI {
 @MainActor
 struct SupacodeApp: App {
   @State private var ghostty: GhosttyRuntime
+  @State private var ghosttyShortcuts: GhosttyShortcutStore
   @State private var settings = SettingsModel()
   @State private var repositoryStore: RepositoryStore
   @State private var updateController: UpdateController
@@ -41,7 +42,9 @@ struct SupacodeApp: App {
         preconditionFailure("ghostty_init failed")
       }
     }
-    _ghostty = State(initialValue: GhosttyRuntime())
+    let runtime = GhosttyRuntime()
+    _ghostty = State(initialValue: runtime)
+    _ghosttyShortcuts = State(initialValue: GhosttyShortcutStore(runtime: runtime))
     let settingsModel = SettingsModel()
     _settings = State(initialValue: settingsModel)
     _repositoryStore = State(initialValue: makeRepositoryStore())
@@ -54,13 +57,15 @@ struct SupacodeApp: App {
         .environment(settings)
         .environment(updateController)
         .environment(repositoryStore)
+        .environment(ghosttyShortcuts)
         .preferredColorScheme(settings.preferredColorScheme)
     }
+    .environment(ghosttyShortcuts)
     .commands {
       OpenRepositoryCommands(repositoryStore: repositoryStore)
       WorktreeCommands(repositoryStore: repositoryStore)
       SidebarCommands()
-      TerminalCommands()
+      TerminalCommands(ghosttyShortcuts: ghosttyShortcuts)
       UpdateCommands(updateController: updateController)
     }
     WindowGroup("Repo Settings", id: WindowIdentifiers.repoSettings, for: Repository.ID.self) { $repositoryID in
@@ -68,15 +73,18 @@ struct SupacodeApp: App {
         RepositorySettingsView(repositoryRootURL: URL(fileURLWithPath: repositoryID))
       } else {
         Text("Select a repository to edit settings.")
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .scenePadding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .scenePadding()
       }
     }
+    .environment(ghosttyShortcuts)
     Settings {
       SettingsView()
         .environment(settings)
         .environment(updateController)
         .environment(repositoryStore)
+        .environment(ghosttyShortcuts)
     }
+    .environment(ghosttyShortcuts)
   }
 }

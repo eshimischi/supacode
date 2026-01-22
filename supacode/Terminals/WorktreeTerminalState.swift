@@ -82,6 +82,19 @@ final class WorktreeTerminalState: BonsplitDelegate {
     return closed
   }
 
+  @discardableResult
+  func closeFocusedSurface() -> Bool {
+    guard let paneId = controller.focusedPaneId,
+      let tab = controller.selectedTab(inPane: paneId),
+      let focusedId = focusedSurfaceIdByTab[tab.id],
+      let surface = surfaces[focusedId]
+    else {
+      return false
+    }
+    surface.performBindingAction("close_surface")
+    return true
+  }
+
   func splitTree(for tabId: TabID, initialInput: String? = nil) -> SplitTree<GhosttySurfaceView> {
     if let existing = trees[tabId] {
       return existing
