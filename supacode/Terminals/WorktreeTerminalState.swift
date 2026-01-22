@@ -191,6 +191,8 @@ final class WorktreeTerminalState: BonsplitDelegate {
     case .equalize:
       trees[tabId] = tree.equalized()
     }
+  }
+
   private func defaultInitialInput() -> String? {
     startupInput()
   }
