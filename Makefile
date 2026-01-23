@@ -31,10 +31,10 @@ $(GHOSTTY_BUILD_OUTPUTS):
 	mise install
 	@cd $(CURRENT_MAKEFILE_DIR)/ThirdParty/ghostty && mise exec -- zig build -Doptimize=ReleaseFast -Demit-xcframework=true -Dsentry=false
 	rsync -a ThirdParty/ghostty/macos/GhosttyKit.xcframework Frameworks
-	@src="$(GHOSTTY_RESOURCE_PATH)"; \
-	dst="$(CURRENT_MAKEFILE_DIR)/Resources/ghostty"; \
-	terminfo_src="$(GHOSTTY_TERMINFO_PATH)"; \
-	terminfo_dst="$(CURRENT_MAKEFILE_DIR)/Resources/terminfo"; \
+	@src="$(CURRENT_MAKEFILE_DIR)/ThirdParty/ghostty/zig-out/share/ghostty"; \
+	dst="$(GHOSTTY_RESOURCE_PATH)"; \
+	terminfo_src="$(CURRENT_MAKEFILE_DIR)/ThirdParty/ghostty/zig-out/share/terminfo"; \
+	terminfo_dst="$(GHOSTTY_TERMINFO_PATH)"; \
 	mkdir -p "$$dst"; \
 	rsync -a --delete "$$src/" "$$dst/"; \
 	mkdir -p "$$terminfo_dst"; \
