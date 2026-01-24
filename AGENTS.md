@@ -1,13 +1,12 @@
 ## Build Commands
 
 ```bash
-open supacode.xcodeproj              # Open in Xcode (primary development)
-make build-ghostty-xcframework       # Rebuild GhosttyKit from Zig source (requires mise)
-make build-app                       # Build macOS app (Debug) via xcodebuild
-make run-app                         # Build and launch Debug app
-make lint                            # Run swiftlint
-make test                            # Run tests
-make format                          # Run swift-format
+make build-ghostty-xcframework # Rebuild GhosttyKit from Zig source (requires mise)
+make build-app # Build macOS app (Debug) via xcodebuild
+make run-app # Build and launch Debug app
+make lint # Run swiftlint
+make test # Run all tests
+make format # Run swift-format
 ```
 
 ## Architecture
@@ -18,31 +17,40 @@ Supacode is a macOS orchestrator for running multiple coding agents in parallel,
 
 ```
 AppFeature (root TCA store)
-  ├─ RepositoriesFeature (repos + worktrees)
-  ├─ SettingsFeature (appearance, updates, repo settings)
-  └─ Workspace/Terminal/Updater clients (side effects + app services)
+ ├─ RepositoriesFeature (repos + worktrees)
+ ├─ SettingsFeature (appearance, updates, repo settings)
+ └─ Workspace/Terminal/Updater clients (side effects + app services)
 
 WorktreeTerminalStore (global terminal state)
-  └─ WorktreeTerminalState (per worktree)
-      └─ BonsplitController (tab/pane management)
-          └─ GhosttySurfaceView[] (one per terminal tab)
+ └─ WorktreeTerminalState (per worktree)
+ └─ Bonsplit (tab/pane management)
+ └─ GhosttySurfaceView[] (one per terminal tab)
 
 GhosttyRuntime (shared singleton)
-  └─ ghostty_app_t (single C instance)
-      └─ ghostty_surface_t[] (independent terminal sessions)
+ └─ ghostty_app_t (single C instance)
+ └─ ghostty_surface_t[] (independent terminal sessions)
 ```
 
-### Key Components
+### Source Layout
 
-- **Features/**: TCA features (`AppFeature`, `RepositoriesFeature`, `SettingsFeature`, `UpdatesFeature`, `RepositorySettingsFeature`)
-- **Features/** deps: `GitClientDependency`, `RepositoryPersistenceClient`, `RepositoryWatcherClient`, `WorkspaceClient`, `TerminalClient`, `UpdaterClient`
-- **Terminals/**: Terminal UI layer using Bonsplit for tab management
-- **GhosttyEmbed/**: Ghostty C API integration - `GhosttyRuntime` initializes the shared instance, `GhosttySurfaceView` handles rendering/input per terminal
-- **Commands/**: macOS menu command handlers wired to TCA actions
+```
+supacode/
+├─ App/ # App entry point, shortcuts, window identifiers
+├─ Domain/ # Core business models (Repository, Worktree, etc.)
+├─ Features/ # TCA features by domain: ├─ App/ # AppFeature (root reducer) ├─ Repositories/ # Sidebar, worktree views and reducer ├─ Settings/ # Settings views, models, reducer ├─ Terminal/ # Terminal tab views and state └─ Updates/ # App update feature
+├─ Clients/ # TCA dependency clients: ├─ Git/ # GitClient (shell out to git/wt) ├─ Repositories/ # Persistence, watcher clients └─ ... # Terminal, Workspace, Settings, Updater
+├─ Infrastructure/ # Low-level integrations: └─ Ghostty/ # Runtime, SurfaceView, Bridge, Store
+├─ Commands/ # macOS menu command handlers
+└─ Support/ # Utilities (paths, etc.)
+```
 
-### State Management Pattern
+### Key Dependencies
 
-App state is managed by TCA with `AppFeature` as the root store. Feature state uses `@ObservableState` and dependencies are provided via `swift-dependencies`. Non-TCA shared stores like `WorktreeTerminalStore` and `GhosttyTerminalStore` remain `@Observable` and `@MainActor`.
+- **TCA (swift-composable-architecture)**: App state, reducers, and side effects
+- **Bonsplit**: Tab/pane splitting UI for terminal management
+- **GhosttyKit**: Terminal emulator (built from Zig source in ThirdParty/ghostty)
+- **Sparkle**: Auto-update framework
+- **swift-dependencies**: Dependency injection for TCA clients
 
 ## Ghostty Keybindings Handling
 
@@ -69,11 +77,6 @@ Always read `./docs/swift-rules.md` before writing Swift code. Key points:
 - After a task, ensure the app builds: `make build-app`
 - Use Peekabo skill to verify UI behavior if necessary
 - To inspect a Swift PM package, clone it with `gj get {git_url}`
-
-## Releases
-
-- When making new releases use `make bump-version` (auto-increments patch) or `make bump-version VERSION=x.x.x`
-- Tagging `vx.x.x` and push will trigger prod build automatically by Github action
 
 ## References
 
