@@ -22,6 +22,29 @@ jobs:
       - run: curl https://mise.run | sh
       - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: mise install
+      - run: |
+          GHOSTTY_SHA=$(git -C ThirdParty/ghostty rev-parse HEAD)
+          CACHE_BASE="/Volumes/My Shared Files/gha-cache"
+          if [ -d "$CACHE_BASE" ]; then
+            CACHE_ROOT="$CACHE_BASE/ghostty/$GHOSTTY_SHA"
+          else
+            CACHE_ROOT=""
+          fi
+          if [ -n "$CACHE_ROOT" ] && [ -d "$CACHE_ROOT/Frameworks/GhosttyKit.xcframework" ] && \
+             [ -d "$CACHE_ROOT/Resources/ghostty" ] && \
+             [ -d "$CACHE_ROOT/Resources/terminfo" ]; then
+            rsync -a "$CACHE_ROOT/Frameworks/GhosttyKit.xcframework" Frameworks/
+            rsync -a "$CACHE_ROOT/Resources/ghostty/" Resources/ghostty/
+            rsync -a "$CACHE_ROOT/Resources/terminfo/" Resources/terminfo/
+          else
+            make build-ghostty-xcframework
+            if [ -n "$CACHE_ROOT" ]; then
+              mkdir -p "$CACHE_ROOT/Frameworks" "$CACHE_ROOT/Resources/ghostty" "$CACHE_ROOT/Resources/terminfo"
+              rsync -a Frameworks/GhosttyKit.xcframework "$CACHE_ROOT/Frameworks/"
+              rsync -a Resources/ghostty/ "$CACHE_ROOT/Resources/ghostty/"
+              rsync -a Resources/terminfo/ "$CACHE_ROOT/Resources/terminfo/"
+            fi
+          fi
       - run: make lint
       - run: make build-app
       - run: make test

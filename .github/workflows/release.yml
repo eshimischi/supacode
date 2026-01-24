@@ -62,11 +62,33 @@ jobs:
             exit 1
           fi
           echo "DEVELOPER_ID_IDENTITY_SHA=$DEVELOPER_ID_IDENTITY_SHA" >> "$GITHUB_ENV"
-      - run: make build-ghostty-xcframework
+      - run: |
+          GHOSTTY_SHA=$(git -C ThirdParty/ghostty rev-parse HEAD)
+          CACHE_BASE="/Volumes/My Shared Files/gha-cache"
+          if [ -d "$CACHE_BASE" ]; then
+            CACHE_ROOT="$CACHE_BASE/ghostty/$GHOSTTY_SHA"
+          else
+            CACHE_ROOT=""
+          fi
+          if [ -n "$CACHE_ROOT" ] && [ -d "$CACHE_ROOT/Frameworks/GhosttyKit.xcframework" ] && \
+             [ -d "$CACHE_ROOT/Resources/ghostty" ] && \
+             [ -d "$CACHE_ROOT/Resources/terminfo" ]; then
+            rsync -a "$CACHE_ROOT/Frameworks/GhosttyKit.xcframework" Frameworks/
+            rsync -a "$CACHE_ROOT/Resources/ghostty/" Resources/ghostty/
+            rsync -a "$CACHE_ROOT/Resources/terminfo/" Resources/terminfo/
+          else
+            make build-ghostty-xcframework
+            if [ -n "$CACHE_ROOT" ]; then
+              mkdir -p "$CACHE_ROOT/Frameworks" "$CACHE_ROOT/Resources/ghostty" "$CACHE_ROOT/Resources/terminfo"
+              rsync -a Frameworks/GhosttyKit.xcframework "$CACHE_ROOT/Frameworks/"
+              rsync -a Resources/ghostty/ "$CACHE_ROOT/Resources/ghostty/"
+              rsync -a Resources/terminfo/ "$CACHE_ROOT/Resources/terminfo/"
+            fi
+          fi
       - name: Archive Xcode project
         run: |
           set -o pipefail
-          xcodebuild -project supacode.xcodeproj -scheme supacode -configuration Release -archivePath build/supacode.xcarchive archive CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_IDENTITY="$DEVELOPER_ID_IDENTITY_SHA" OTHER_CODE_SIGN_FLAGS="--timestamp" 2>&1 | mise exec -- xcsift -qw
+          xcodebuild -project supacode.xcodeproj -scheme supacode -configuration Release -archivePath build/supacode.xcarchive archive CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_IDENTITY="$DEVELOPER_ID_IDENTITY_SHA" OTHER_CODE_SIGN_FLAGS="--timestamp" -skipMacroValidation 2>&1 | mise exec -- xcsift -qw
       - run: |
           cat > build/ExportOptions.plist <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
