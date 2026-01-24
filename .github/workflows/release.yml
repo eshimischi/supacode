@@ -33,7 +33,7 @@ jobs:
       - name: Prepare release context
         run: |
           set -euo pipefail
-          PREV_TAG=$(git tag --list 'v*' --sort=-v:refname | rg -v "^$TAG$" | head -n 1 || true)
+          PREV_TAG=$(git tag --list 'v*' --sort=-v:refname | grep -Fvx "$TAG" | head -n 1 || true)
           if [ -n "$PREV_TAG" ]; then
             RANGE="$PREV_TAG..$TAG"
           else
