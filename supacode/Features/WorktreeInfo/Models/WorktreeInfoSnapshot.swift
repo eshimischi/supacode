@@ -5,6 +5,12 @@ nonisolated struct WorktreeInfoSnapshot: Equatable {
   let repositoryPath: String
   let worktreePath: String
   let defaultBranchName: String?
+  let pullRequestNumber: Int?
+  let pullRequestTitle: String?
+  let pullRequestState: String?
+  let pullRequestIsDraft: Bool
+  let pullRequestReviewDecision: String?
+  let pullRequestUpdatedAt: Date?
   let workflowName: String?
   let workflowStatus: String?
   let workflowConclusion: String?

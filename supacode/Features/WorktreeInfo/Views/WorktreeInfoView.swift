@@ -69,6 +69,31 @@ struct WorktreeInfoView: View {
                   .foregroundStyle(snapshot.defaultBranchName == nil ? .secondary : .primary)
               }
 
+              if let number = snapshot.pullRequestNumber, let title = snapshot.pullRequestTitle {
+                LabeledContent("Pull request") {
+                  Text("#\(number) \(title)")
+                }
+              } else {
+                LabeledContent("Pull request") {
+                  Text("n/a")
+                    .foregroundStyle(.secondary)
+                }
+              }
+
+              LabeledContent("PR state") {
+                Text(prStateText(
+                  state: snapshot.pullRequestState,
+                  isDraft: snapshot.pullRequestIsDraft,
+                  reviewDecision: snapshot.pullRequestReviewDecision
+                ))
+              }
+
+              if let updatedAt = snapshot.pullRequestUpdatedAt {
+                LabeledContent("PR updated") {
+                  Text(updatedAt, style: .relative)
+                }
+              }
+
               Text("CI")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -119,6 +144,23 @@ private func ciStatusText(status: String?, conclusion: String?) -> String {
   }
   if let conclusion, !conclusion.isEmpty {
     parts.append(conclusion)
+  }
+  if parts.isEmpty {
+    return "n/a"
+  }
+  return parts.joined(separator: " / ")
+}
+
+private func prStateText(state: String?, isDraft: Bool, reviewDecision: String?) -> String {
+  var parts: [String] = []
+  if let state, !state.isEmpty {
+    parts.append(state)
+  }
+  if isDraft {
+    parts.append("draft")
+  }
+  if let reviewDecision, !reviewDecision.isEmpty {
+    parts.append(reviewDecision)
   }
   if parts.isEmpty {
     return "n/a"

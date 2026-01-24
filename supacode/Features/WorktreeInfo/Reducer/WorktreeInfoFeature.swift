@@ -118,7 +118,8 @@ nonisolated private func loadWorktreeInfoSnapshot(
   let repoRoot = worktree.repositoryRootURL
   let repositoryName = repoRoot.lastPathComponent
   let repositoryPath = repoRoot.path(percentEncoded: false)
-  let worktreePath = worktree.workingDirectory.path(percentEncoded: false)
+  let worktreeRoot = worktree.workingDirectory
+  let worktreePath = worktreeRoot.path(percentEncoded: false)
 
   var githubError: String?
   var ciError: String?
@@ -140,6 +141,28 @@ nonisolated private func loadWorktreeInfoSnapshot(
   var workflowConclusion: String?
   var workflowUpdatedAt: Date?
 
+  var pullRequestNumber: Int?
+  var pullRequestTitle: String?
+  var pullRequestState: String?
+  var pullRequestIsDraft = false
+  var pullRequestReviewDecision: String?
+  var pullRequestUpdatedAt: Date?
+
+  if githubAvailable {
+    do {
+      if let pullRequest = try await githubCLI.currentPullRequest(worktreeRoot) {
+        pullRequestNumber = pullRequest.number
+        pullRequestTitle = pullRequest.title
+        pullRequestState = pullRequest.state
+        pullRequestIsDraft = pullRequest.isDraft
+        pullRequestReviewDecision = pullRequest.reviewDecision
+        pullRequestUpdatedAt = pullRequest.updatedAt
+      }
+    } catch {
+      githubError = githubError ?? error.localizedDescription
+    }
+  }
+
   if githubAvailable, let defaultBranchName {
     do {
       if let run = try await githubCLI.latestRun(repoRoot, defaultBranchName) {
@@ -158,6 +181,12 @@ nonisolated private func loadWorktreeInfoSnapshot(
     repositoryPath: repositoryPath,
     worktreePath: worktreePath,
     defaultBranchName: defaultBranchName,
+    pullRequestNumber: pullRequestNumber,
+    pullRequestTitle: pullRequestTitle,
+    pullRequestState: pullRequestState,
+    pullRequestIsDraft: pullRequestIsDraft,
+    pullRequestReviewDecision: pullRequestReviewDecision,
+    pullRequestUpdatedAt: pullRequestUpdatedAt,
     workflowName: workflowName,
     workflowStatus: workflowStatus,
     workflowConclusion: workflowConclusion,

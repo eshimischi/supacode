@@ -4,6 +4,7 @@ import Foundation
 struct GithubCLIClient {
   var defaultBranch: @Sendable (URL) async throws -> String
   var latestRun: @Sendable (URL, String) async throws -> GithubWorkflowRun?
+  var currentPullRequest: @Sendable (URL) async throws -> GithubPullRequest?
   var isAvailable: @Sendable () async -> Bool
 }
 
@@ -47,6 +48,25 @@ extension GithubCLIClient: DependencyKey {
       let runs = try decoder.decode([GithubWorkflowRun].self, from: data)
       return runs.first
       },
+      currentPullRequest: { worktreeRoot in
+        let output = try await runGhAllowingNoPR(
+          shell: shell,
+          arguments: [
+            "pr",
+            "view",
+            "--json",
+            "number,title,state,isDraft,reviewDecision,updatedAt",
+          ],
+          repoRoot: worktreeRoot
+        )
+        guard let output, !output.isEmpty else {
+          return nil
+        }
+        let data = Data(output.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(GithubPullRequest.self, from: data)
+      },
       isAvailable: {
         do {
           _ = try await runGh(shell: shell, arguments: ["--version"], repoRoot: nil)
@@ -61,6 +81,7 @@ extension GithubCLIClient: DependencyKey {
   static let testValue = GithubCLIClient(
     defaultBranch: { _ in "main" },
     latestRun: { _, _ in nil },
+    currentPullRequest: { _ in nil },
     isAvailable: { true }
   )
 }
@@ -87,5 +108,21 @@ nonisolated private func runGh(
       throw GithubCLIError.commandFailed(message)
     }
     throw GithubCLIError.commandFailed(error.localizedDescription)
+  }
+}
+
+nonisolated private func runGhAllowingNoPR(
+  shell: ShellClient,
+  arguments: [String],
+  repoRoot: URL?
+) async throws -> String? {
+  do {
+    return try await runGh(shell: shell, arguments: arguments, repoRoot: repoRoot)
+  } catch {
+    let message = error.localizedDescription.lowercased()
+    if message.contains("no pull requests found") {
+      return nil
+    }
+    throw error
   }
 }
