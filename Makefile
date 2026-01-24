@@ -27,8 +27,6 @@ help:  # Display this help.
 build-ghostty-xcframework: $(GHOSTTY_BUILD_OUTPUTS) # Build ghostty framework
 
 $(GHOSTTY_BUILD_OUTPUTS):
-	git submodule update --init --recursive
-	mise install
 	@cd $(CURRENT_MAKEFILE_DIR)/ThirdParty/ghostty && mise exec -- zig build -Doptimize=ReleaseFast -Demit-xcframework=true -Dsentry=false
 	rsync -a ThirdParty/ghostty/macos/GhosttyKit.xcframework Frameworks
 	@src="$(CURRENT_MAKEFILE_DIR)/ThirdParty/ghostty/zig-out/share/ghostty"; \
