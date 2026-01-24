@@ -17,9 +17,10 @@ Supacode is a macOS orchestrator for running multiple coding agents in parallel,
 ### Core Data Flow
 
 ```
-RepositoryStore (central state)
-  └─ Repository[] (git repos with worktrees)
-      └─ Worktree[] (each branch = independent workspace)
+AppFeature (root TCA store)
+  ├─ RepositoriesFeature (repos + worktrees)
+  ├─ SettingsFeature (appearance, updates, repo settings)
+  └─ Workspace/Terminal/Updater clients (side effects + app services)
 
 WorktreeTerminalStore (global terminal state)
   └─ WorktreeTerminalState (per worktree)
@@ -33,15 +34,15 @@ GhosttyRuntime (shared singleton)
 
 ### Key Components
 
-- **GhosttyEmbed/**: Ghostty C API integration - `GhosttyRuntime` initializes the shared instance, `GhosttySurfaceView` handles rendering/input per terminal
+- **Features/**: TCA features (`AppFeature`, `RepositoriesFeature`, `SettingsFeature`, `UpdatesFeature`, `RepositorySettingsFeature`)
+- **Features/** deps: `GitClientDependency`, `RepositoryPersistenceClient`, `RepositoryWatcherClient`, `WorkspaceClient`, `TerminalClient`, `UpdaterClient`
 - **Terminals/**: Terminal UI layer using Bonsplit for tab management
-- **RepositoryStore.swift**: Central state management for repos and worktrees
-- **GitClient.swift**: Git CLI wrapper for worktree operations (uses bundled `git-wt` script)
-- **Commands/**: macOS menu command handlers (worktree, terminal, sidebar)
+- **GhosttyEmbed/**: Ghostty C API integration - `GhosttyRuntime` initializes the shared instance, `GhosttySurfaceView` handles rendering/input per terminal
+- **Commands/**: macOS menu command handlers wired to TCA actions
 
 ### State Management Pattern
 
-All `@Observable` classes use `@MainActor` isolation (Swift 6 strict concurrency). Key stores: `RepositoryStore`, `WorktreeTerminalStore`, `GhosttyTerminalStore`, `SettingsModel`.
+App state is managed by TCA with `AppFeature` as the root store. Feature state uses `@ObservableState` and dependencies are provided via `swift-dependencies`. Non-TCA shared stores like `WorktreeTerminalStore` and `GhosttyTerminalStore` remain `@Observable` and `@MainActor`.
 
 ## Ghostty Keybindings Handling
 
@@ -53,7 +54,7 @@ All `@Observable` classes use `@MainActor` isolation (Swift 6 strict concurrency
 
 Always read `./docs/swift-rules.md` before writing Swift code. Key points:
 - Target macOS 26.0+, Swift 6.2+
-- Use `@Observable` with `@MainActor`, never `ObservableObject`
+- Use `@ObservableState` for TCA feature state; use `@Observable` for non-TCA shared stores; never `ObservableObject`
 - Modern SwiftUI only: `foregroundStyle()`, `NavigationStack`, `Button` over `onTapGesture()`
 - Prefer Swift-native APIs over Foundation where they exist
 

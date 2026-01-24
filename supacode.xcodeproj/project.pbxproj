@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		92970ABCFB3F023AD07AE2C3 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 497B582F42253CBC8FBF101F /* ComposableArchitecture */; };
+		C8B33B9AFE69E738ABFA08BE /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 497B582F42253CBC8FBF101F /* ComposableArchitecture */; };
 		D61414532F1F9799007DF542 /* Bonsplit in Frameworks */ = {isa = PBXBuildFile; productRef = D61414522F1F9799007DF542 /* Bonsplit */; };
 		D64162B02F23CAF100260CA3 /* ghostty in Resources */ = {isa = PBXBuildFile; fileRef = D64162AD2F23CAF100260CA3 /* ghostty */; };
 		D64162B12F23CAF100260CA3 /* terminfo in Resources */ = {isa = PBXBuildFile; fileRef = D64162AE2F23CAF100260CA3 /* terminfo */; };
@@ -68,6 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C8B33B9AFE69E738ABFA08BE /* ComposableArchitecture in Frameworks */,
 				D6F820F52F1FC962004B4174 /* Kingfisher in Frameworks */,
 				D6A1CB312F1F4ABF004FDABD /* GhosttyKit.xcframework in Frameworks */,
 				D61414532F1F9799007DF542 /* Bonsplit in Frameworks */,
@@ -80,6 +83,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				92970ABCFB3F023AD07AE2C3 /* ComposableArchitecture in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -140,6 +144,7 @@
 				D61414522F1F9799007DF542 /* Bonsplit */,
 				D6F820F42F1FC962004B4174 /* Kingfisher */,
 				B5698573F7354B14B940EA60 /* Sparkle */,
+				497B582F42253CBC8FBF101F /* ComposableArchitecture */,
 			);
 			productName = supacode;
 			productReference = D69CE04A2F1F378200584C57 /* supacode.app */;
@@ -163,6 +168,7 @@
 			);
 			name = supacodeTests;
 			packageProductDependencies = (
+				497B582F42253CBC8FBF101F /* ComposableArchitecture */,
 			);
 			productName = supacodeTests;
 			productReference = D6F821012F1FCBC1004B4174 /* supacodeTests.xctest */;
@@ -200,6 +206,7 @@
 				D61414512F1F9799007DF542 /* XCRemoteSwiftPackageReference "bonsplit" */,
 				D6F820F32F1FC962004B4174 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				8E10C2184F9342AC850013F5 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				B43B9188E1D223E6F7344501 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D69CE04B2F1F378200584C57 /* Products */;
@@ -573,6 +580,14 @@
 				minimumVersion = 2.8.1;
 			};
 		};
+		B43B9188E1D223E6F7344501 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 		D61414512F1F9799007DF542 /* XCRemoteSwiftPackageReference "bonsplit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/khoi/bonsplit.git";
@@ -592,6 +607,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		497B582F42253CBC8FBF101F /* ComposableArchitecture */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B43B9188E1D223E6F7344501 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
+			productName = ComposableArchitecture;
+		};
 		B5698573F7354B14B940EA60 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E10C2184F9342AC850013F5 /* XCRemoteSwiftPackageReference "Sparkle" */;

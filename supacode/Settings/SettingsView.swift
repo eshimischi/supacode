@@ -1,7 +1,12 @@
+import ComposableArchitecture
 import SwiftUI
 
 struct SettingsView: View {
+  let store: StoreOf<AppFeature>
+
   var body: some View {
+    let settingsStore = store.scope(state: \.settings, action: \.settings)
+    let updatesStore = store.scope(state: \.updates, action: \.updates)
     TabView {
       Tab("Agents", systemImage: "terminal") {
         CodingAgentSettingsView()
@@ -10,10 +15,10 @@ struct SettingsView: View {
         ChatSettingsView()
       }
       Tab("Appearance", systemImage: "paintpalette") {
-        AppearanceSettingsView()
+        AppearanceSettingsView(store: settingsStore)
       }
       Tab("Updates", systemImage: "arrow.down.circle") {
-        UpdatesSettingsView()
+        UpdatesSettingsView(settingsStore: settingsStore, updatesStore: updatesStore)
       }
     }
     .scenePadding()

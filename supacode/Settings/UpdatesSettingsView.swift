@@ -1,29 +1,36 @@
+import ComposableArchitecture
 import SwiftUI
 
 struct UpdatesSettingsView: View {
-  @Environment(UpdateController.self) private var updateController
+  @Bindable var settingsStore: StoreOf<SettingsFeature>
+  let updatesStore: StoreOf<UpdatesFeature>
 
   var body: some View {
-    @Bindable var updateController = updateController
-
     VStack(alignment: .leading, spacing: 0) {
       Form {
         Section("Automatic Updates") {
           Toggle(
-            "Check for updates automatically", isOn: $updateController.automaticallyChecksForUpdates
+            "Check for updates automatically",
+            isOn: Binding(
+              get: { settingsStore.updatesAutomaticallyCheckForUpdates },
+              set: { settingsStore.send(.setUpdatesAutomaticallyCheckForUpdates($0)) }
+            )
           )
           Toggle(
             "Download and install updates automatically",
-            isOn: $updateController.automaticallyDownloadsUpdates
+            isOn: Binding(
+              get: { settingsStore.updatesAutomaticallyDownloadUpdates },
+              set: { settingsStore.send(.setUpdatesAutomaticallyDownloadUpdates($0)) }
+            )
           )
-          .disabled(!updateController.automaticallyChecksForUpdates)
+          .disabled(!settingsStore.updatesAutomaticallyCheckForUpdates)
         }
       }
       .formStyle(.grouped)
 
       HStack {
         Button("Check for Updates Now") {
-          updateController.checkForUpdates()
+          updatesStore.send(.checkForUpdates)
         }
         .help("Check for Updates (\(AppShortcuts.checkForUpdates.display))")
         Spacer()

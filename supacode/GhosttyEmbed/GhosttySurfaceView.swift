@@ -4,6 +4,12 @@ import CoreText
 import GhosttyKit
 
 final class GhosttySurfaceView: NSView, Identifiable {
+  private struct ScrollbarState {
+    let total: UInt64
+    let offset: UInt64
+    let length: UInt64
+  }
+
   private let runtime: GhosttyRuntime
   let id = UUID()
   let bridge: GhosttySurfaceBridge
@@ -18,7 +24,7 @@ final class GhosttySurfaceView: NSView, Identifiable {
   private var markedText = NSMutableAttributedString()
   private var keyTextAccumulator: [String]?
   private var cellSize: CGSize = .zero
-  private var lastScrollbar: (total: UInt64, offset: UInt64, length: UInt64)?
+  private var lastScrollbar: ScrollbarState?
   weak var scrollWrapper: GhosttySurfaceScrollView? {
     didSet {
       if let lastScrollbar {
@@ -31,6 +37,32 @@ final class GhosttySurfaceView: NSView, Identifiable {
     }
   }
   var onFocusChange: ((Bool) -> Void)?
+
+  private static let mouseCursorMap: [ghostty_action_mouse_shape_e: NSCursor] = [
+    GHOSTTY_MOUSE_SHAPE_DEFAULT: .arrow,
+    GHOSTTY_MOUSE_SHAPE_TEXT: .iBeam,
+    GHOSTTY_MOUSE_SHAPE_GRAB: .openHand,
+    GHOSTTY_MOUSE_SHAPE_GRABBING: .closedHand,
+    GHOSTTY_MOUSE_SHAPE_POINTER: .pointingHand,
+    GHOSTTY_MOUSE_SHAPE_VERTICAL_TEXT: .iBeamCursorForVerticalLayout,
+    GHOSTTY_MOUSE_SHAPE_CONTEXT_MENU: .contextualMenu,
+    GHOSTTY_MOUSE_SHAPE_CROSSHAIR: .crosshair,
+    GHOSTTY_MOUSE_SHAPE_NOT_ALLOWED: .operationNotAllowed,
+  ]
+
+  private static let mouseResizeLeftRightShapes: Set<ghostty_action_mouse_shape_e> = [
+    GHOSTTY_MOUSE_SHAPE_COL_RESIZE,
+    GHOSTTY_MOUSE_SHAPE_W_RESIZE,
+    GHOSTTY_MOUSE_SHAPE_E_RESIZE,
+    GHOSTTY_MOUSE_SHAPE_EW_RESIZE,
+  ]
+
+  private static let mouseResizeUpDownShapes: Set<ghostty_action_mouse_shape_e> = [
+    GHOSTTY_MOUSE_SHAPE_ROW_RESIZE,
+    GHOSTTY_MOUSE_SHAPE_N_RESIZE,
+    GHOSTTY_MOUSE_SHAPE_S_RESIZE,
+    GHOSTTY_MOUSE_SHAPE_NS_RESIZE,
+  ]
 
   override var acceptsFirstResponder: Bool { true }
 
@@ -317,7 +349,7 @@ final class GhosttySurfaceView: NSView, Identifiable {
   }
 
   func updateScrollbar(total: UInt64, offset: UInt64, length: UInt64) {
-    lastScrollbar = (total: total, offset: offset, length: length)
+    lastScrollbar = ScrollbarState(total: total, offset: offset, length: length)
     scrollWrapper?.updateScrollbar(total: total, offset: offset, length: length)
   }
 
@@ -334,42 +366,24 @@ final class GhosttySurfaceView: NSView, Identifiable {
   }
 
   func setMouseShape(_ shape: ghostty_action_mouse_shape_e) {
-    let newCursor: NSCursor? = switch shape {
-    case GHOSTTY_MOUSE_SHAPE_DEFAULT:
-      .arrow
-    case GHOSTTY_MOUSE_SHAPE_TEXT:
-      .iBeam
-    case GHOSTTY_MOUSE_SHAPE_GRAB:
-      .openHand
-    case GHOSTTY_MOUSE_SHAPE_GRABBING:
-      .closedHand
-    case GHOSTTY_MOUSE_SHAPE_POINTER:
-      .pointingHand
-    case GHOSTTY_MOUSE_SHAPE_COL_RESIZE:
-      .resizeLeftRight
-    case GHOSTTY_MOUSE_SHAPE_ROW_RESIZE:
-      .resizeUpDown
-    case GHOSTTY_MOUSE_SHAPE_W_RESIZE, GHOSTTY_MOUSE_SHAPE_E_RESIZE,
-      GHOSTTY_MOUSE_SHAPE_EW_RESIZE:
-      .resizeLeftRight
-    case GHOSTTY_MOUSE_SHAPE_N_RESIZE, GHOSTTY_MOUSE_SHAPE_S_RESIZE,
-      GHOSTTY_MOUSE_SHAPE_NS_RESIZE:
-      .resizeUpDown
-    case GHOSTTY_MOUSE_SHAPE_VERTICAL_TEXT:
-      .iBeamCursorForVerticalLayout
-    case GHOSTTY_MOUSE_SHAPE_CONTEXT_MENU:
-      .contextualMenu
-    case GHOSTTY_MOUSE_SHAPE_CROSSHAIR:
-      .crosshair
-    case GHOSTTY_MOUSE_SHAPE_NOT_ALLOWED:
-      .operationNotAllowed
-    default:
-      nil
-    }
+    let newCursor = cursor(for: shape)
     guard let newCursor else { return }
     guard newCursor != currentCursor else { return }
     currentCursor = newCursor
     window?.invalidateCursorRects(for: self)
+  }
+
+  private func cursor(for shape: ghostty_action_mouse_shape_e) -> NSCursor? {
+    if let cursor = Self.mouseCursorMap[shape] {
+      return cursor
+    }
+    if Self.mouseResizeLeftRightShapes.contains(shape) {
+      return .resizeLeftRight
+    }
+    if Self.mouseResizeUpDownShapes.contains(shape) {
+      return .resizeUpDown
+    }
+    return nil
   }
 
   func setMouseVisibility(_ visible: Bool) {
@@ -424,92 +438,118 @@ final class GhosttySurfaceView: NSView, Identifiable {
   }
 
   override func performKeyEquivalent(with event: NSEvent) -> Bool {
-    guard event.type == .keyDown else { return false }
-    guard let surface else { return false }
-    if window?.firstResponder !== self { return false }
+    guard let surface = keyEquivalentSurface(for: event) else { return false }
+    if handleGhosttyBinding(event, surface: surface) { return true }
+    if handleControlReturn(event) { return true }
+    if handleControlSlash(event) { return true }
+    if handleRepeatKeyEquivalent(event) { return true }
+    return false
+  }
+
+  private func keyEquivalentSurface(for event: NSEvent) -> ghostty_surface_t? {
+    guard event.type == .keyDown else { return nil }
+    guard let surface else { return nil }
+    guard window?.firstResponder === self else { return nil }
+    return surface
+  }
+
+  private func handleGhosttyBinding(_ event: NSEvent, surface: ghostty_surface_t) -> Bool {
     let (translationEvent, translationMods) = translationState(event, surface: surface)
     var key = ghosttyKeyEvent(
       translationEvent, action: GHOSTTY_ACTION_PRESS, translationMods: translationMods)
     let text = ghosttyCharacters(translationEvent) ?? ""
-    if !text.isEmpty, let codepoint = text.utf8.first, codepoint >= 0x20 {
-      var flags = ghostty_binding_flags_e(0)
-      let isBinding = text.withCString { ptr in
-        key.text = ptr
-        return ghostty_surface_key_is_binding(surface, key, &flags)
-      }
-      if isBinding {
-        if shouldAttemptMenu(for: flags),
-          let menu = NSApp.mainMenu,
-          menu.performKeyEquivalent(with: event)
-        {
-          return true
-        }
-        return text.withCString { ptr in
-          key.text = ptr
-          return ghostty_surface_key(surface, key)
-        }
-      }
-    } else {
-      var flags = ghostty_binding_flags_e(0)
-      key.text = nil
-      if ghostty_surface_key_is_binding(surface, key, &flags) {
-        if shouldAttemptMenu(for: flags),
-          let menu = NSApp.mainMenu,
-          menu.performKeyEquivalent(with: event)
-        {
-          return true
-        }
-        return ghostty_surface_key(surface, key)
-      }
+    if let codepoint = text.utf8.first, codepoint >= 0x20 {
+      return handleTextBinding(text, event: event, key: &key, surface: surface)
     }
+    return handleNonTextBinding(event: event, key: &key, surface: surface)
+  }
 
-    if event.charactersIgnoringModifiers == "\r" {
-      if !event.modifierFlags.contains(.control) {
-        return false
-      }
-      if let finalEvent = NSEvent.keyEvent(
-        with: .keyDown,
-        location: event.locationInWindow,
-        modifierFlags: event.modifierFlags,
-        timestamp: event.timestamp,
-        windowNumber: event.windowNumber,
-        context: nil,
-        characters: "\r",
-        charactersIgnoringModifiers: "\r",
-        isARepeat: event.isARepeat,
-        keyCode: event.keyCode
-      ) {
-        sendKey(action: GHOSTTY_ACTION_PRESS, event: finalEvent)
-        return true
-      }
+  private func handleTextBinding(
+    _ text: String,
+    event: NSEvent,
+    key: inout ghostty_input_key_s,
+    surface: ghostty_surface_t
+  ) -> Bool {
+    var flags = ghostty_binding_flags_e(0)
+    let isBinding = text.withCString { ptr in
+      key.text = ptr
+      return ghostty_surface_key_is_binding(surface, key, &flags)
     }
-
-    if event.charactersIgnoringModifiers == "/" {
-      if !event.modifierFlags.contains(.control)
-        || !event.modifierFlags.isDisjoint(with: [.shift, .command, .option])
-      {
-        return false
-      }
-      if let finalEvent = NSEvent.keyEvent(
-        with: .keyDown,
-        location: event.locationInWindow,
-        modifierFlags: event.modifierFlags,
-        timestamp: event.timestamp,
-        windowNumber: event.windowNumber,
-        context: nil,
-        characters: "_",
-        charactersIgnoringModifiers: "_",
-        isARepeat: event.isARepeat,
-        keyCode: event.keyCode
-      ) {
-        sendKey(action: GHOSTTY_ACTION_PRESS, event: finalEvent)
-        return true
-      }
+    guard isBinding else { return false }
+    if shouldAttemptMenu(for: flags),
+      let menu = NSApp.mainMenu,
+      menu.performKeyEquivalent(with: event)
+    {
+      return true
     }
+    return text.withCString { ptr in
+      key.text = ptr
+      return ghostty_surface_key(surface, key)
+    }
+  }
 
-    if event.timestamp == 0 {
+  private func handleNonTextBinding(
+    event: NSEvent,
+    key: inout ghostty_input_key_s,
+    surface: ghostty_surface_t
+  ) -> Bool {
+    var flags = ghostty_binding_flags_e(0)
+    key.text = nil
+    guard ghostty_surface_key_is_binding(surface, key, &flags) else { return false }
+    if shouldAttemptMenu(for: flags),
+      let menu = NSApp.mainMenu,
+      menu.performKeyEquivalent(with: event)
+    {
+      return true
+    }
+    return ghostty_surface_key(surface, key)
+  }
+
+  private func handleControlReturn(_ event: NSEvent) -> Bool {
+    guard event.charactersIgnoringModifiers == "\r" else { return false }
+    guard event.modifierFlags.contains(.control) else { return false }
+    guard let finalEvent = NSEvent.keyEvent(
+      with: .keyDown,
+      location: event.locationInWindow,
+      modifierFlags: event.modifierFlags,
+      timestamp: event.timestamp,
+      windowNumber: event.windowNumber,
+      context: nil,
+      characters: "\r",
+      charactersIgnoringModifiers: "\r",
+      isARepeat: event.isARepeat,
+      keyCode: event.keyCode
+    ) else {
       return false
     }
+    sendKey(action: GHOSTTY_ACTION_PRESS, event: finalEvent)
+    return true
+  }
+
+  private func handleControlSlash(_ event: NSEvent) -> Bool {
+    guard event.charactersIgnoringModifiers == "/" else { return false }
+    guard event.modifierFlags.contains(.control) else { return false }
+    guard event.modifierFlags.isDisjoint(with: [.shift, .command, .option]) else { return false }
+    guard let finalEvent = NSEvent.keyEvent(
+      with: .keyDown,
+      location: event.locationInWindow,
+      modifierFlags: event.modifierFlags,
+      timestamp: event.timestamp,
+      windowNumber: event.windowNumber,
+      context: nil,
+      characters: "_",
+      charactersIgnoringModifiers: "_",
+      isARepeat: event.isARepeat,
+      keyCode: event.keyCode
+    ) else {
+      return false
+    }
+    sendKey(action: GHOSTTY_ACTION_PRESS, event: finalEvent)
+    return true
+  }
+
+  private func handleRepeatKeyEquivalent(_ event: NSEvent) -> Bool {
+    guard event.timestamp != 0 else { return false }
     if !event.modifierFlags.contains(.command) && !event.modifierFlags.contains(.control) {
       lastPerformKeyEvent = nil
       return false
@@ -959,7 +999,7 @@ extension GhosttySurfaceView: NSTextInputClient {
 
   func firstRect(forCharacterRange range: NSRange, actualRange: NSRangePointer?) -> NSRect {
     guard let surface else {
-      return NSMakeRect(frame.origin.x, frame.origin.y, 0, 0)
+      return NSRect(x: frame.origin.x, y: frame.origin.y, width: 0, height: 0)
     }
     var caretX: Double = 0
     var caretY: Double = 0
@@ -981,11 +1021,11 @@ extension GhosttySurfaceView: NSTextInputClient {
       width = 0
       caretX += cellSize.width * Double(range.location + range.length)
     }
-    let viewRect = NSMakeRect(
-      caretX,
-      frame.size.height - caretY,
-      width,
-      max(height, cellSize.height)
+    let viewRect = NSRect(
+      x: caretX,
+      y: frame.size.height - caretY,
+      width: width,
+      height: max(height, cellSize.height)
     )
     let winRect = convert(viewRect, to: nil)
     guard let window else { return winRect }

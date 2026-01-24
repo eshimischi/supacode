@@ -1,13 +1,13 @@
+import ComposableArchitecture
 import SwiftUI
 
 struct UpdateCommands: Commands {
-  var updateController: UpdateController
+  let store: StoreOf<UpdatesFeature>
 
   var body: some Commands {
-    @Bindable var updateController = updateController
     CommandGroup(after: .appInfo) {
       Button("Check for Updates...") {
-        updateController.checkForUpdates()
+        store.send(.checkForUpdates)
       }
       .keyboardShortcut(
         AppShortcuts.checkForUpdates.keyEquivalent,

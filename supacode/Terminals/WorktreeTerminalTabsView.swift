@@ -4,13 +4,12 @@ import SwiftUI
 struct WorktreeTerminalTabsView: View {
   let worktree: Worktree
   let store: WorktreeTerminalStore
-  @Environment(RepositoryStore.self) private var repositoryStore
+  let shouldRunSetupScript: Bool
+  let createTab: () -> Void
   @Environment(GhosttyShortcutStore.self) private var ghosttyShortcuts
 
   var body: some View {
-    let state = store.state(for: worktree) {
-      repositoryStore.consumeSetupScript(for: worktree.id)
-    }
+    let state = store.state(for: worktree) { shouldRunSetupScript }
     let newTabShortcut = ghosttyShortcuts.display(for: "new_tab")
     ZStack(alignment: .topLeading) {
       BonsplitView(
@@ -26,7 +25,7 @@ struct WorktreeTerminalTabsView: View {
       )
       .overlay(alignment: .topTrailing) {
         Button("New Terminal", systemImage: "plus") {
-          store.createTab(in: worktree)
+          createTab()
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)

@@ -1,7 +1,8 @@
+import ComposableArchitecture
 import SwiftUI
 
 struct AppearanceSettingsView: View {
-  @Environment(SettingsModel.self) private var settings
+  @Bindable var store: StoreOf<SettingsFeature>
 
   var body: some View {
     VStack(alignment: .leading) {
@@ -11,9 +12,9 @@ struct AppearanceSettingsView: View {
             ForEach(AppearanceMode.allCases) { mode in
               AppearanceOptionCardView(
                 mode: mode,
-                isSelected: mode == settings.appearanceMode
+                isSelected: mode == store.appearanceMode
               ) {
-                settings.appearanceMode = mode
+                store.send(.setAppearanceMode(mode))
               }
             }
           }

@@ -1,16 +1,21 @@
-import Observation
+import ComposableArchitecture
 import SwiftUI
 
 struct WorktreeCommands: Commands {
-  let repositoryStore: RepositoryStore
+  let store: StoreOf<RepositoriesFeature>
+  @ObservedObject private var viewStore: ViewStore<RepositoriesFeature.State, RepositoriesFeature.Action>
   @FocusedValue(\.openSelectedWorktreeAction) private var openSelectedWorktreeAction
   @FocusedValue(\.removeWorktreeAction) private var removeWorktreeAction
 
+  init(store: StoreOf<RepositoriesFeature>) {
+    self.store = store
+    viewStore = ViewStore(store, observe: { $0 })
+  }
+
   var body: some Commands {
-    @Bindable var repositoryStore = repositoryStore
     CommandGroup(replacing: .newItem) {
       Button("Open Repository...", systemImage: "folder") {
-        repositoryStore.isOpenPanelPresented = true
+        store.send(.setOpenPanelPresented(true))
       }
       .keyboardShortcut(
         AppShortcuts.openRepository.keyEquivalent,
@@ -27,15 +32,13 @@ struct WorktreeCommands: Commands {
       .help("Open Worktree (\(AppShortcuts.openFinder.display))")
       .disabled(openSelectedWorktreeAction == nil)
       Button("New Worktree", systemImage: "plus") {
-        Task {
-          await repositoryStore.createRandomWorktree()
-        }
+        store.send(.createRandomWorktree)
       }
       .keyboardShortcut(
         AppShortcuts.newWorktree.keyEquivalent, modifiers: AppShortcuts.newWorktree.modifiers
       )
       .help("New Worktree (\(AppShortcuts.newWorktree.display))")
-      .disabled(!repositoryStore.canCreateWorktree)
+      .disabled(!viewStore.canCreateWorktree)
       Button("Remove Worktree") {
         removeWorktreeAction?()
       }
@@ -43,9 +46,7 @@ struct WorktreeCommands: Commands {
       .help("Remove Worktree (⌘⌫)")
       .disabled(removeWorktreeAction == nil)
       Button("Refresh Worktrees") {
-        Task {
-          await repositoryStore.loadPersistedRepositories()
-        }
+        store.send(.refreshWorktrees)
       }
       .keyboardShortcut(
         AppShortcuts.refreshWorktrees.keyEquivalent,

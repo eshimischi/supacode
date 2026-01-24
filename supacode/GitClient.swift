@@ -276,7 +276,7 @@ struct GitClient {
     }
 
     var pwd = passwd()
-    var result: UnsafeMutablePointer<passwd>? = nil
+    var result: UnsafeMutablePointer<passwd>?
     let bufSize = sysconf(_SC_GETPW_R_SIZE_MAX)
     let size = bufSize > 0 ? Int(bufSize) : 1024
     var buffer = [CChar](repeating: 0, count: size)

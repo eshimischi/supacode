@@ -1,24 +1,22 @@
+import ComposableArchitecture
 import SwiftUI
 
 struct RepositorySettingsView: View {
-  let repositoryRootURL: URL
-  @State private var model: RepositorySettingsModel
-
-  init(repositoryRootURL: URL) {
-    self.repositoryRootURL = repositoryRootURL
-    _model = State(initialValue: RepositorySettingsModel(rootURL: repositoryRootURL))
-  }
+  @Bindable var store: StoreOf<RepositorySettingsFeature>
 
   var body: some View {
-    @Bindable var model = model
-
     Form {
       Section {
         ZStack(alignment: .topLeading) {
-          TextEditor(text: $model.setupScript)
-            .font(.body)
-            .frame(minHeight: 120)
-          if model.setupScript.isEmpty {
+          TextEditor(
+            text: Binding(
+              get: { store.settings.setupScript },
+              set: { store.send(.setSetupScript($0)) }
+            )
+          )
+          .font(.body)
+          .frame(minHeight: 120)
+          if store.settings.setupScript.isEmpty {
             Text("echo 123")
               .foregroundStyle(.secondary)
               .padding(.top, 8)
@@ -38,5 +36,8 @@ struct RepositorySettingsView: View {
     .formStyle(.grouped)
     .scenePadding()
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .task {
+      store.send(.task)
+    }
   }
 }

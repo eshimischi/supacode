@@ -5,106 +5,60 @@
 //  Created by khoi on 20/1/26.
 //
 
+import ComposableArchitecture
 import Kingfisher
-import Observation
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct ContentView: View {
-  let runtime: GhosttyRuntime
-  @Environment(RepositoryStore.self) private var repositoryStore
+  @Bindable var store: StoreOf<AppFeature>
+  let terminalStore: WorktreeTerminalStore
   @Environment(\.scenePhase) private var scenePhase
-  @State private var terminalStore: WorktreeTerminalStore
   @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
 
-  init(runtime: GhosttyRuntime) {
-    self.runtime = runtime
-    _terminalStore = State(initialValue: WorktreeTerminalStore(runtime: runtime))
+  init(store: StoreOf<AppFeature>, terminalStore: WorktreeTerminalStore) {
+    self.store = store
+    self.terminalStore = terminalStore
   }
 
   var body: some View {
-    @Bindable var repositoryStore = repositoryStore
-    let selectedRow = repositoryStore.selectedRow(for: repositoryStore.selectedWorktreeID)
-    let selectedWorktree = repositoryStore.worktree(for: repositoryStore.selectedWorktreeID)
-    let loadingInfo: WorktreeLoadingInfo? = {
-      guard let selectedRow else { return nil }
-      let repositoryName = repositoryStore.repositoryName(for: selectedRow.repositoryID)
-      if selectedRow.isDeleting {
-        return WorktreeLoadingInfo(
-          name: selectedRow.name,
-          repositoryName: repositoryName,
-          state: .removing
-        )
-      }
-      if selectedRow.isPending {
-        return WorktreeLoadingInfo(
-          name: selectedRow.name,
-          repositoryName: repositoryName,
-          state: .creating
-        )
-      }
-      return nil
-    }()
+    let repositoriesStore = store.scope(state: \.repositories, action: \.repositories)
     NavigationSplitView(columnVisibility: $sidebarVisibility) {
-      SidebarView(
-        repositories: repositoryStore.repositories,
-        pendingWorktrees: repositoryStore.pendingWorktrees,
-        selection: $repositoryStore.selectedWorktreeID,
-        createWorktree: { repository in
-          Task {
-            await repositoryStore.createRandomWorktree(in: repository)
-          }
-        }
-      )
+      SidebarView(store: repositoriesStore)
     } detail: {
-      WorktreeDetailView(
-        selectedWorktree: selectedWorktree,
-        loadingInfo: loadingInfo,
-        terminalStore: terminalStore,
-        toggleSidebar: toggleSidebar
-      )
+      WorktreeDetailView(store: store, terminalStore: terminalStore)
     }
     .navigationSplitViewStyle(.balanced)
-    .onChange(of: scenePhase) { _, newValue in
-      guard newValue == .active else { return }
-      Task {
-        await repositoryStore.loadPersistedRepositories()
-      }
+    .task {
+      store.send(.task)
     }
-    .onChange(of: repositoryStore.repositories) { _, newValue in
-      var worktreeIDs: Set<Worktree.ID> = []
-      for repository in newValue {
-        for worktree in repository.worktrees {
-          worktreeIDs.insert(worktree.id)
-        }
-      }
-      terminalStore.prune(keeping: worktreeIDs)
+    .onChange(of: scenePhase) { _, newValue in
+      store.send(.scenePhaseChanged(newValue))
     }
     .fileImporter(
-      isPresented: $repositoryStore.isOpenPanelPresented,
+      isPresented: Binding(
+        get: { store.repositories.isOpenPanelPresented },
+        set: { store.send(.repositories(.setOpenPanelPresented($0))) }
+      ),
       allowedContentTypes: [.folder],
       allowsMultipleSelection: true
     ) { result in
       switch result {
       case .success(let urls):
-        Task {
-          await repositoryStore.openRepositories(at: urls)
-        }
+        store.send(.repositories(.openRepositories(urls)))
       case .failure:
-        repositoryStore.alert = AppAlert(
-          id: UUID(),
-          title: "Unable to open folders",
-          message: "Supacode could not read the selected folders."
+        store.send(
+          .repositories(
+            .presentAlert(
+              title: "Unable to open folders",
+              message: "Supacode could not read the selected folders."
+            )
+          )
         )
       }
     }
-    .alert(item: $repositoryStore.alert) { error in
-      Alert(
-        title: Text(error.title),
-        message: Text(error.message),
-        dismissButton: .default(Text("OK"))
-      )
-    }
+    .alert(store: repositoriesStore.scope(state: \.$alert, action: \.alert))
+    .alert(store: store.scope(state: \.$alert, action: \.alert))
     .focusedSceneValue(\.toggleSidebarAction, toggleSidebar)
   }
 
@@ -116,286 +70,207 @@ struct ContentView: View {
 }
 
 private struct WorktreeDetailView: View {
-  let selectedWorktree: Worktree?
-  let loadingInfo: WorktreeLoadingInfo?
+  @Bindable var store: StoreOf<AppFeature>
   let terminalStore: WorktreeTerminalStore
-  let toggleSidebar: () -> Void
-  @State private var openActionError: OpenActionError?
-  @State private var openActionSelection: OpenWorktreeAction = .finder
-  private let settingsStore = RepositorySettingsStore()
 
   var body: some View {
+    detailBody(state: store.state)
+  }
+
+  @ViewBuilder
+  private func detailBody(state: AppFeature.State) -> some View {
+    let repositories = state.repositories
+    let selectedRow = repositories.selectedRow(for: repositories.selectedWorktreeID)
+    let selectedWorktree = repositories.worktree(for: repositories.selectedWorktreeID)
+    let loadingInfo = loadingInfo(for: selectedRow, repositories: repositories)
     let isOpenDisabled = selectedWorktree == nil || loadingInfo != nil
-    let openActionHelpText =
-      "\(openActionSelection.title) (\(AppShortcuts.openFinder.display))"
+    let openActionSelection = state.openActionSelection
     let openSelectedWorktreeAction: (() -> Void)? = isOpenDisabled
       ? nil
-      : { performOpenAction(openActionSelection) }
+      : { store.send(.openSelectedWorktree) }
+    let newTerminalAction: (() -> Void)? = isOpenDisabled
+      ? nil
+      : { store.send(.newTerminal) }
+    let closeTabAction: (() -> Void)? = isOpenDisabled
+      ? nil
+      : { store.send(.closeTab) }
+    let closeSurfaceAction: (() -> Void)? = isOpenDisabled
+      ? nil
+      : { store.send(.closeSurface) }
     Group {
       if let loadingInfo {
         WorktreeLoadingView(info: loadingInfo)
       } else if let selectedWorktree {
-        WorktreeTerminalTabsView(worktree: selectedWorktree, store: terminalStore)
-          .id(selectedWorktree.id)
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
+        let shouldRunSetupScript = repositories.pendingSetupScriptWorktreeIDs.contains(selectedWorktree.id)
+        WorktreeTerminalTabsView(
+          worktree: selectedWorktree,
+          store: terminalStore,
+          shouldRunSetupScript: shouldRunSetupScript,
+          createTab: { store.send(.newTerminal) }
+        )
+        .id(selectedWorktree.id)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+          if shouldRunSetupScript {
+            store.send(.repositories(.consumeSetupScript(selectedWorktree.id)))
+          }
+        }
       } else {
-        EmptyStateView()
+        EmptyStateView(store: store.scope(state: \.repositories, action: \.repositories))
       }
     }
     .navigationTitle(selectedWorktree?.name ?? loadingInfo?.name ?? "Supacode")
     .toolbar {
-      if !isOpenDisabled {
-        ToolbarItemGroup(placement: .primaryAction) {
-          Menu {
-            ForEach(OpenWorktreeAction.allCases) { action in
-              let isDefault = action == openActionSelection
-              Button {
-                setOpenActionSelection(action)
-                performOpenAction(action)
-              } label: {
-                if let appIcon = action.appIcon {
-                  Label {
-                    Text(action.title)
-                  } icon: {
-                    Image(nsImage: appIcon)
-                      .accessibilityHidden(true)
-                  }
-                } else {
-                  Label(action.title, systemImage: "app")
-                }
-              }
-              .help(
-                isDefault
-                  ? "\(action.title) (\(AppShortcuts.openFinder.display))"
-                  : action.title
-              )
-            }
-          } label: {
-            Label {
-              Text("Open")
-            } icon: {
-              if let appIcon = openActionSelection.appIcon {
-                Image(nsImage: appIcon)
-                  .resizable()
-                  .scaledToFit()
-                  .accessibilityHidden(true)
-              } else {
-                Image(systemName: "folder")
-                  .resizable()
-                  .scaledToFit()
-                  .accessibilityHidden(true)
-              }
-            }
-          }
-          .help(openActionHelpText)
-        }
-      }
+      openToolbar(isOpenDisabled: isOpenDisabled, openActionSelection: openActionSelection)
     }
-    .alert(item: $openActionError) { error in
-      Alert(
-        title: Text(error.title),
-        message: Text(error.message),
-        dismissButton: .default(Text("OK"))
-      )
-    }
-    .onAppear {
-      loadOpenActionSelection()
-    }
-    .onChange(of: selectedWorktree?.repositoryRootURL) { _, _ in
-      loadOpenActionSelection()
-    }
-    .focusedSceneValue(
-      \.newTerminalAction,
-      {
-        guard let selectedWorktree else { return }
-        terminalStore.createTab(in: selectedWorktree)
-      }
-    )
-    .focusedSceneValue(
-      \.closeTabAction,
-      {
-        guard let selectedWorktree else { return }
-        terminalStore.closeFocusedTab(in: selectedWorktree)
-      }
-    )
-    .focusedSceneValue(
-      \.closeSurfaceAction,
-      {
-        guard let selectedWorktree else { return }
-        terminalStore.closeFocusedSurface(in: selectedWorktree)
-      }
-    )
+    .focusedSceneValue(\.newTerminalAction, newTerminalAction)
+    .focusedSceneValue(\.closeTabAction, closeTabAction)
+    .focusedSceneValue(\.closeSurfaceAction, closeSurfaceAction)
     .focusedSceneValue(\.openSelectedWorktreeAction, openSelectedWorktreeAction)
   }
 
-  private func performOpenAction(_ action: OpenWorktreeAction) {
-    guard let selectedWorktree else { return }
-    action.perform(with: selectedWorktree) { error in
-      openActionError = error
+  private func loadingInfo(
+    for selectedRow: WorktreeRowModel?,
+    repositories: RepositoriesFeature.State
+  ) -> WorktreeLoadingInfo? {
+    guard let selectedRow else { return nil }
+    let repositoryName = repositories.repositoryName(for: selectedRow.repositoryID)
+    if selectedRow.isDeleting {
+      return WorktreeLoadingInfo(
+        name: selectedRow.name,
+        repositoryName: repositoryName,
+        state: .removing
+      )
+    }
+    if selectedRow.isPending {
+      return WorktreeLoadingInfo(
+        name: selectedRow.name,
+        repositoryName: repositoryName,
+        state: .creating
+      )
+    }
+    return nil
+  }
+
+  @ToolbarContentBuilder
+  private func openToolbar(
+    isOpenDisabled: Bool,
+    openActionSelection: OpenWorktreeAction
+  ) -> some ToolbarContent {
+    if !isOpenDisabled {
+      ToolbarItemGroup(placement: .primaryAction) {
+        openMenu(openActionSelection: openActionSelection)
+      }
     }
   }
 
-  private func loadOpenActionSelection() {
-    guard let selectedWorktree else {
-      openActionSelection = .finder
-      return
+  @ViewBuilder
+  private func openMenu(openActionSelection: OpenWorktreeAction) -> some View {
+    Menu {
+      ForEach(OpenWorktreeAction.allCases) { action in
+        let isDefault = action == openActionSelection
+        Button {
+          store.send(.openActionSelectionChanged(action))
+          store.send(.openWorktree(action))
+        } label: {
+          if let appIcon = action.appIcon {
+            Label {
+              Text(action.title)
+            } icon: {
+              Image(nsImage: appIcon)
+                .accessibilityHidden(true)
+            }
+          } else {
+            Label(action.title, systemImage: "app")
+          }
+        }
+        .help(openActionHelpText(for: action, isDefault: isDefault))
+      }
+    } label: {
+      Label {
+        Text("Open")
+      } icon: {
+        if let appIcon = openActionSelection.appIcon {
+          Image(nsImage: appIcon)
+            .resizable()
+            .scaledToFit()
+            .accessibilityHidden(true)
+        } else {
+          Image(systemName: "folder")
+            .resizable()
+            .scaledToFit()
+            .accessibilityHidden(true)
+        }
+      }
     }
-    let settings = settingsStore.load(for: selectedWorktree.repositoryRootURL)
-    openActionSelection = OpenWorktreeAction.fromSettingsID(settings.openActionID)
+    .help(openActionHelpText(for: openActionSelection, isDefault: true))
   }
 
-  private func setOpenActionSelection(_ action: OpenWorktreeAction) {
-    openActionSelection = action
-    guard let selectedWorktree else { return }
-    var settings = settingsStore.load(for: selectedWorktree.repositoryRootURL)
-    settings.openActionID = action.settingsID
-    settingsStore.save(settings, for: selectedWorktree.repositoryRootURL)
+  private func openActionHelpText(for action: OpenWorktreeAction, isDefault: Bool) -> String {
+    isDefault
+      ? "\(action.title) (\(AppShortcuts.openFinder.display))"
+      : action.title
   }
 }
 
 private struct SidebarView: View {
-  let repositories: [Repository]
-  let pendingWorktrees: [PendingWorktree]
-  @Binding var selection: Worktree.ID?
-  let createWorktree: (Repository) -> Void
-  @Environment(RepositoryStore.self) private var repositoryStore
+  @Bindable var store: StoreOf<RepositoriesFeature>
   @State private var expandedRepoIDs: Set<Repository.ID>
-  @State private var pendingRemoval: PendingWorktreeRemoval?
-  @State private var pendingRepositoryRemoval: PendingRepositoryRemoval?
 
-  init(
-    repositories: [Repository],
-    pendingWorktrees: [PendingWorktree],
-    selection: Binding<Worktree.ID?>,
-    createWorktree: @escaping (Repository) -> Void
-  ) {
-    self.repositories = repositories
-    self.pendingWorktrees = pendingWorktrees
-    _selection = selection
-    self.createWorktree = createWorktree
-    let repositoryIDs = Set(repositories.map(\.id))
-    let pendingRepositoryIDs = Set(pendingWorktrees.map(\.repositoryID))
+  init(store: StoreOf<RepositoriesFeature>) {
+    self.store = store
+    let repositoryIDs = Set(store.repositories.map(\.id))
+    let pendingRepositoryIDs = Set(store.pendingWorktrees.map(\.repositoryID))
     _expandedRepoIDs = State(initialValue: repositoryIDs.union(pendingRepositoryIDs))
   }
 
   var body: some View {
-    let selectedRow = repositoryStore.selectedRow(for: selection)
+    let state = store.state
+    let selectedRow = state.selectedRow(for: state.selectedWorktreeID)
     let removeWorktreeAction: (() -> Void)? = {
       guard let selectedRow, selectedRow.isRemovable else { return nil }
-      return removeSelectedWorktree
+      return {
+        store.send(.requestRemoveWorktree(selectedRow.id, selectedRow.repositoryID))
+      }
     }()
-    SidebarListView(
-      repositories: repositories,
-      pendingWorktrees: pendingWorktrees,
-      selection: $selection,
-      expandedRepoIDs: $expandedRepoIDs,
-      createWorktree: createWorktree,
-      onRequestRemoval: requestRemoval,
-      onRequestRepositoryRemoval: requestRepositoryRemoval
-    )
-    .focusedSceneValue(\.removeWorktreeAction, removeWorktreeAction)
-    .alert(item: $pendingRemoval) { candidate in
-      Alert(
-        title: Text("Worktree has uncommitted changes"),
-        message: Text(
-          "Remove \(candidate.worktree.name)? "
-            + "This deletes the worktree directory and its branch."
-        ),
-        primaryButton: .destructive(Text("Remove anyway")) {
-          Task {
-            await repositoryStore.removeWorktree(
-              candidate.worktree, from: candidate.repository, force: true)
-          }
-        },
-        secondaryButton: .cancel()
-      )
-    }
-    .alert(item: $pendingRepositoryRemoval) { candidate in
-      Alert(
-        title: Text("Remove repository?"),
-        message: Text(
-          "This removes the repository from Supacode and deletes all of its worktrees "
-            + "and their branches created by Supacode. "
-            + "The main repository folder is not deleted."
-        ),
-        primaryButton: .destructive(Text("Remove repository")) {
-          Task {
-            await repositoryStore.removeRepository(candidate.repository)
-          }
-        },
-        secondaryButton: .cancel()
-      )
-    }
-  }
-
-  private func requestRemoval(_ worktree: Worktree, in repository: Repository) {
-    Task {
-      let isDirty = await repositoryStore.isWorktreeDirty(worktree)
-      if isDirty {
-        pendingRemoval = PendingWorktreeRemoval(repository: repository, worktree: worktree)
-      } else {
-        await repositoryStore.removeWorktree(worktree, from: repository, force: true)
-      }
-    }
-  }
-
-  private func removeSelectedWorktree() {
-    guard let selection else { return }
-    for repository in repositories {
-      if let worktree = repository.worktrees.first(where: { $0.id == selection }) {
-        requestRemoval(worktree, in: repository)
-        return
-      }
-    }
-  }
-
-  private func requestRepositoryRemoval(_ repository: Repository) {
-    if repositoryStore.isRemovingRepository(repository) {
-      return
-    }
-    pendingRepositoryRemoval = PendingRepositoryRemoval(repository: repository)
+    SidebarListView(store: store, expandedRepoIDs: $expandedRepoIDs)
+      .focusedSceneValue(\.removeWorktreeAction, removeWorktreeAction)
   }
 }
 
 private struct SidebarListView: View {
-  let repositories: [Repository]
-  let pendingWorktrees: [PendingWorktree]
-  @Binding var selection: Worktree.ID?
+  @Bindable var store: StoreOf<RepositoriesFeature>
   @Binding var expandedRepoIDs: Set<Repository.ID>
-  let createWorktree: (Repository) -> Void
-  let onRequestRemoval: (Worktree, Repository) -> Void
-  let onRequestRepositoryRemoval: (Repository) -> Void
-  @Environment(RepositoryStore.self) private var repositoryStore
 
   var body: some View {
-    List(selection: $selection) {
-      ForEach(repositories) { repository in
+    let selection = Binding<Worktree.ID?>(
+      get: { store.selectedWorktreeID },
+      set: { store.send(.selectWorktree($0)) }
+    )
+    List(selection: selection) {
+      ForEach(store.repositories) { repository in
         RepositorySectionView(
           repository: repository,
           expandedRepoIDs: $expandedRepoIDs,
-          createWorktree: createWorktree,
-          onRequestRemoval: onRequestRemoval,
-          onRequestRepositoryRemoval: onRequestRepositoryRemoval
+          store: store
         )
       }
     }
     .listStyle(.sidebar)
     .frame(minWidth: 220)
-    .onChange(of: repositories) { _, newValue in
+    .onChange(of: store.repositories) { _, newValue in
       let current = Set(newValue.map(\.id))
       expandedRepoIDs.formUnion(current)
       expandedRepoIDs = expandedRepoIDs.intersection(current)
     }
-    .onChange(of: pendingWorktrees) { _, newValue in
+    .onChange(of: store.pendingWorktrees) { _, newValue in
       let repositoryIDs = Set(newValue.map(\.repositoryID))
       expandedRepoIDs.formUnion(repositoryIDs)
     }
     .dropDestination(for: URL.self) { urls, _ in
       let fileURLs = urls.filter(\.isFileURL)
       guard !fileURLs.isEmpty else { return false }
-      Task {
-        await repositoryStore.openRepositories(at: fileURLs)
-      }
+      store.send(.openRepositories(fileURLs))
       return true
     }
   }
@@ -404,15 +279,13 @@ private struct SidebarListView: View {
 private struct RepositorySectionView: View {
   let repository: Repository
   @Binding var expandedRepoIDs: Set<Repository.ID>
-  let createWorktree: (Repository) -> Void
-  let onRequestRemoval: (Worktree, Repository) -> Void
-  let onRequestRepositoryRemoval: (Repository) -> Void
-  @Environment(RepositoryStore.self) private var repositoryStore
+  @Bindable var store: StoreOf<RepositoriesFeature>
   @Environment(\.openWindow) private var openWindow
 
   var body: some View {
+    let state = store.state
     let isExpanded = expandedRepoIDs.contains(repository.id)
-    let isRemovingRepository = repositoryStore.isRemovingRepository(repository)
+    let isRemovingRepository = state.isRemovingRepository(repository)
     let openRepoSettings = {
       openWindow(id: WindowIdentifiers.repoSettings, value: repository.id)
     }
@@ -420,7 +293,7 @@ private struct RepositorySectionView: View {
       WorktreeRowsView(
         repository: repository,
         isExpanded: isExpanded,
-        onRequestRemoval: onRequestRemoval
+        store: store
       )
     } header: {
       HStack {
@@ -449,7 +322,7 @@ private struct RepositorySectionView: View {
           }
           .help("Repo Settings (no shortcut)")
           Button("Remove Repository") {
-            onRequestRepositoryRemoval(repository)
+            store.send(.requestRemoveRepository(repository.id))
           }
           .help("Remove repository (no shortcut)")
           .disabled(isRemovingRepository)
@@ -473,7 +346,7 @@ private struct RepositorySectionView: View {
         .help("Repository options (no shortcut)")
         .disabled(isRemovingRepository)
         Button("New Worktree", systemImage: "plus") {
-          createWorktree(repository)
+          store.send(.createRandomWorktreeInRepository(repository.id))
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.plain)
@@ -491,13 +364,13 @@ private struct RepositorySectionView: View {
 private struct WorktreeRowsView: View {
   let repository: Repository
   let isExpanded: Bool
-  let onRequestRemoval: (Worktree, Repository) -> Void
-  @Environment(RepositoryStore.self) private var repositoryStore
+  @Bindable var store: StoreOf<RepositoriesFeature>
 
   var body: some View {
     if isExpanded {
-      let rows = repositoryStore.worktreeRows(in: repository)
-      let isRepositoryRemoving = repositoryStore.isRemovingRepository(repository)
+      let state = store.state
+      let rows = state.worktreeRows(in: repository)
+      let isRepositoryRemoving = state.isRemovingRepository(repository)
       ForEach(rows) { row in
         rowView(row, isRepositoryRemoving: isRepositoryRemoving)
       }
@@ -506,9 +379,7 @@ private struct WorktreeRowsView: View {
 
   @ViewBuilder
   private func rowView(_ row: WorktreeRowModel, isRepositoryRemoving: Bool) -> some View {
-    if row.isRemovable, let worktree = repositoryStore.worktree(for: row.id),
-      !isRepositoryRemoving
-    {
+    if row.isRemovable, let worktree = store.state.worktree(for: row.id), !isRepositoryRemoving {
       WorktreeRow(
         name: row.name,
         isPinned: row.isPinned,
@@ -518,17 +389,17 @@ private struct WorktreeRowsView: View {
       .contextMenu {
         if row.isPinned {
           Button("Unpin") {
-            repositoryStore.unpinWorktree(worktree)
+            store.send(.unpinWorktree(worktree.id))
           }
           .help("Unpin (no shortcut)")
         } else {
           Button("Pin to top") {
-            repositoryStore.pinWorktree(worktree)
+            store.send(.pinWorktree(worktree.id))
           }
           .help("Pin to top (no shortcut)")
         }
         Button("Remove") {
-          onRequestRemoval(worktree, repository)
+          store.send(.requestRemoveWorktree(worktree.id, repository.id))
         }
         .help("Remove worktree (⌘⌫)")
       }
@@ -541,28 +412,6 @@ private struct WorktreeRowsView: View {
       .tag(row.id)
       .disabled(isRepositoryRemoving)
     }
-  }
-}
-
-private struct PendingWorktreeRemoval: Identifiable, Hashable {
-  let id: Worktree.ID
-  let repository: Repository
-  let worktree: Worktree
-
-  init(repository: Repository, worktree: Worktree) {
-    self.id = worktree.id
-    self.repository = repository
-    self.worktree = worktree
-  }
-}
-
-private struct PendingRepositoryRemoval: Identifiable, Hashable {
-  let id: Repository.ID
-  let repository: Repository
-
-  init(repository: Repository) {
-    self.id = repository.id
-    self.repository = repository
   }
 }
 
@@ -684,7 +533,7 @@ private struct WorktreeLoadingView: View {
 }
 
 private struct EmptyStateView: View {
-  @Environment(RepositoryStore.self) private var repositoryStore
+  let store: StoreOf<RepositoriesFeature>
 
   var body: some View {
     VStack {
@@ -700,7 +549,7 @@ private struct EmptyStateView: View {
       .font(.subheadline)
       .foregroundStyle(.secondary)
       Button("Open Repository...") {
-        repositoryStore.isOpenPanelPresented = true
+        store.send(.setOpenPanelPresented(true))
       }
       .keyboardShortcut(
         AppShortcuts.openRepository.keyEquivalent,

@@ -8,6 +8,7 @@
 import Foundation
 import GhosttyKit
 import SwiftUI
+import ComposableArchitecture
 
 private enum GhosttyCLI {
   static let argv: [UnsafeMutablePointer<CChar>?] = {
@@ -27,9 +28,8 @@ private enum GhosttyCLI {
 struct SupacodeApp: App {
   @State private var ghostty: GhosttyRuntime
   @State private var ghosttyShortcuts: GhosttyShortcutStore
-  @State private var settings = SettingsModel()
-  @State private var repositoryStore: RepositoryStore
-  @State private var updateController: UpdateController
+  @State private var terminalStore: WorktreeTerminalStore
+  @State private var store: StoreOf<AppFeature>
 
   @MainActor init() {
     if let resourceURL = Bundle.main.resourceURL?.appendingPathComponent("ghostty") {
@@ -45,31 +45,52 @@ struct SupacodeApp: App {
     let runtime = GhosttyRuntime()
     _ghostty = State(initialValue: runtime)
     _ghosttyShortcuts = State(initialValue: GhosttyShortcutStore(runtime: runtime))
-    let settingsModel = SettingsModel()
-    _settings = State(initialValue: settingsModel)
-    _repositoryStore = State(initialValue: makeRepositoryStore())
-    _updateController = State(initialValue: UpdateController(settings: settingsModel))
+    let initialSettings = SettingsStore().load()
+    let terminalStore = WorktreeTerminalStore(runtime: runtime)
+    _terminalStore = State(initialValue: terminalStore)
+    _store = State(
+      initialValue: Store(initialState: AppFeature.State(settings: SettingsFeature.State(settings: initialSettings))) {
+        AppFeature()
+      } withDependencies: { values in
+        values.terminalClient = TerminalClient(
+          createTab: { worktree, pane in
+            terminalStore.createTab(in: worktree, pane: pane)
+          },
+          closeFocusedTab: { worktree in
+            terminalStore.closeFocusedTab(in: worktree)
+          },
+          closeFocusedSurface: { worktree in
+            terminalStore.closeFocusedSurface(in: worktree)
+          },
+          prune: { ids in
+            terminalStore.prune(keeping: ids)
+          }
+        )
+      }
+    )
   }
 
   var body: some Scene {
     WindowGroup {
-      ContentView(runtime: ghostty)
-        .environment(settings)
-        .environment(updateController)
-        .environment(repositoryStore)
+      ContentView(store: store, terminalStore: terminalStore)
         .environment(ghosttyShortcuts)
-        .preferredColorScheme(settings.preferredColorScheme)
+        .preferredColorScheme(store.settings.appearanceMode.colorScheme)
     }
     .environment(ghosttyShortcuts)
     .commands {
-      WorktreeCommands(repositoryStore: repositoryStore)
+      WorktreeCommands(store: store.scope(state: \.repositories, action: \.repositories))
       SidebarCommands()
       TerminalCommands(ghosttyShortcuts: ghosttyShortcuts)
-      UpdateCommands(updateController: updateController)
+      UpdateCommands(store: store.scope(state: \.updates, action: \.updates))
     }
     WindowGroup("Repo Settings", id: WindowIdentifiers.repoSettings, for: Repository.ID.self) { $repositoryID in
       if let repositoryID {
-        RepositorySettingsView(repositoryRootURL: URL(fileURLWithPath: repositoryID))
+        let rootURL = URL(fileURLWithPath: repositoryID)
+        RepositorySettingsView(
+          store: Store(initialState: RepositorySettingsFeature.State(rootURL: rootURL)) {
+            RepositorySettingsFeature()
+          }
+        )
       } else {
         Text("Select a repository to edit settings.")
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -78,10 +99,7 @@ struct SupacodeApp: App {
     }
     .environment(ghosttyShortcuts)
     Settings {
-      SettingsView()
-        .environment(settings)
-        .environment(updateController)
-        .environment(repositoryStore)
+      SettingsView(store: store)
         .environment(ghosttyShortcuts)
     }
     .environment(ghosttyShortcuts)

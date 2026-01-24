@@ -127,6 +127,7 @@ struct TerminalSplitTreeView: View {
             Image(systemName: "ellipsis")
               .font(.system(size: 14, weight: .semibold))
               .foregroundStyle(.primary.opacity(0.5))
+              .accessibilityHidden(true)
           }
         }
         .contentShape(.rect)
