@@ -3,6 +3,7 @@ import SwiftUI
 
 struct OpenWorktreeActionMenuLabelView: View {
   let action: OpenWorktreeAction
+  let shortcutHint: String?
 
   private func resizedIcon(_ image: NSImage, size: CGSize) -> NSImage {
     let newImage = NSImage(size: size)
@@ -23,7 +24,15 @@ struct OpenWorktreeActionMenuLabelView: View {
         Image(nsImage: resizedIcon(icon, size: CGSize(width: 16, height: 16)))
           .renderingMode(.original)
       }
-      Text(action.labelTitle)
+      if let shortcutHint {
+        HStack(spacing: 2) {
+          Text(action.labelTitle)
+          Text("(\(shortcutHint))")
+            .foregroundStyle(.secondary)
+        }
+      } else {
+        Text(action.labelTitle)
+      }
     }
   }
 }

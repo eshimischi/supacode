@@ -102,7 +102,10 @@ struct WorktreeDetailView: View {
       Button {
         store.send(.openWorktree(openActionSelection))
       } label: {
-        OpenWorktreeActionMenuLabelView(action: openActionSelection)
+        OpenWorktreeActionMenuLabelView(
+          action: openActionSelection,
+          shortcutHint: AppShortcuts.openFinder.display
+        )
       }
       .buttonStyle(.borderless)
       .padding(8)
@@ -118,7 +121,7 @@ struct WorktreeDetailView: View {
             store.send(.openActionSelectionChanged(action))
             store.send(.openWorktree(action))
           } label: {
-            OpenWorktreeActionMenuLabelView(action: action)
+            OpenWorktreeActionMenuLabelView(action: action, shortcutHint: nil)
           }
           .buttonStyle(.plain)
           .help(openActionHelpText(for: action, isDefault: isDefault))
