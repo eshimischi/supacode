@@ -8,9 +8,9 @@ struct WorktreeInfoFeature {
     var worktree: Worktree?
     var snapshot: WorktreeInfoSnapshot?
     var status: WorktreeInfoStatus = .idle
-    var lastRefresh: Date?
+    var nextRefresh: Date?
     var cachedSnapshots: [Worktree.ID: WorktreeInfoSnapshot] = [:]
-    var cachedRefreshDates: [Worktree.ID: Date] = [:]
+    var cachedNextRefreshDates: [Worktree.ID: Date] = [:]
   }
 
   enum Action: Equatable {
@@ -35,11 +35,11 @@ struct WorktreeInfoFeature {
         state.worktree = worktree
         if let worktree {
           state.snapshot = state.cachedSnapshots[worktree.id]
-          state.lastRefresh = state.cachedRefreshDates[worktree.id]
+          state.nextRefresh = state.cachedNextRefreshDates[worktree.id]
           state.status = state.snapshot == nil ? .loading : .idle
         } else {
           state.snapshot = nil
-          state.lastRefresh = nil
+          state.nextRefresh = nil
           state.status = .idle
         }
         if worktree == nil {
@@ -79,11 +79,11 @@ struct WorktreeInfoFeature {
         case .success(let snapshot):
           state.snapshot = snapshot
           state.status = .idle
-          let refreshedAt = Date()
-          state.lastRefresh = refreshedAt
+          let nextRefresh = Date().addingTimeInterval(60)
+          state.nextRefresh = nextRefresh
           if let worktree = state.worktree {
             state.cachedSnapshots[worktree.id] = snapshot
-            state.cachedRefreshDates[worktree.id] = refreshedAt
+            state.cachedNextRefreshDates[worktree.id] = nextRefresh
           }
         case .failure(let error):
           state.status = .failed(error.localizedDescription)

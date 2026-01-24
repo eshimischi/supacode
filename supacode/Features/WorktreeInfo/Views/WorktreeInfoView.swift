@@ -96,9 +96,9 @@ struct WorktreeInfoView: View {
               }
             }
 
-            if let lastRefresh = state.lastRefresh {
-              LabeledContent("Last refreshed") {
-                Text(lastRefresh, style: .relative)
+            if let nextRefresh = state.nextRefresh {
+              LabeledContent("Next refresh") {
+                Text(nextRefresh, style: .relative)
               }
               .foregroundStyle(.secondary)
             }
