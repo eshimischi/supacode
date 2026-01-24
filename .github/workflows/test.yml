@@ -13,12 +13,15 @@ concurrency:
 jobs:
   build:
     runs-on: [self-hosted, macOS, ARM64]
+    env:
+      MISE_HTTP_TIMEOUT: 120
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - run: curl https://mise.run | sh
       - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: mise install
       - run: make lint
       - run: make build-app
       - run: make test

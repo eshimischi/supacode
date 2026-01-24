@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: write
     env:
+      MISE_HTTP_TIMEOUT: 120
       GH_TOKEN: ${{ github.token }}
       RELEASE_REPO_MAIN: supabitapp/supacode
       RELEASE_REPO_SH: supabitapp/supacode-sh
@@ -38,6 +39,7 @@ jobs:
           submodules: recursive
       - run: curl https://mise.run | sh
       - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: mise install
       - run: |
           TAG="$GITHUB_REF_NAME"
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
