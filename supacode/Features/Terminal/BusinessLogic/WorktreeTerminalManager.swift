@@ -61,14 +61,18 @@ final class WorktreeTerminalManager {
     states[worktreeID]?.focusedTaskStatus
   }
 
-  func paneCount(for worktreeID: Worktree.ID) -> Int? {
-    states[worktreeID]?.paneCount
-  }
-
   func setNotificationsEnabled(_ enabled: Bool) {
     notificationsEnabled = enabled
     for state in states.values {
       state.setNotificationsEnabled(enabled)
     }
+  }
+
+  func hasUnseenNotifications(for worktreeID: Worktree.ID) -> Bool {
+    states[worktreeID]?.hasUnseenNotification == true
+  }
+
+  func clearNotificationIndicator(for worktree: Worktree) {
+    states[worktree.id]?.clearNotificationIndicator()
   }
 }

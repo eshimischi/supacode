@@ -17,6 +17,7 @@ final class WorktreeTerminalState {
   private var pendingSetupScript: Bool
   var notifications: [WorktreeTerminalNotification] = []
   var notificationsEnabled = true
+  var hasUnseenNotification = false
 
   init(runtime: GhosttyRuntime, worktree: Worktree, runSetupScript: Bool = false) {
     self.runtime = runtime
@@ -31,13 +32,6 @@ final class WorktreeTerminalState {
       return .running
     }
     return .idle
-  }
-
-  var paneCount: Int {
-    tabManager.tabs.reduce(into: 0) { count, tab in
-      guard let tree = trees[tab.id] else { return }
-      count += tree.leaves().count
-    }
   }
 
   func ensureInitialTab() {
@@ -265,6 +259,13 @@ final class WorktreeTerminalState {
 
   func setNotificationsEnabled(_ enabled: Bool) {
     notificationsEnabled = enabled
+    if !enabled {
+      hasUnseenNotification = false
+    }
+  }
+
+  func clearNotificationIndicator() {
+    hasUnseenNotification = false
   }
 
   private func setupScriptInput(shouldRun: Bool) -> String? {
@@ -367,6 +368,7 @@ final class WorktreeTerminalState {
       title: trimmedTitle,
       body: trimmedBody
     ))
+    hasUnseenNotification = true
   }
 
   private func removeTree(for tabId: TerminalTabID) {

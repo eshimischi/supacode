@@ -79,6 +79,9 @@ struct SupacodeApp: App {
           },
           setNotificationsEnabled: { enabled in
             terminalManager.setNotificationsEnabled(enabled)
+          },
+          clearNotificationIndicator: { worktree in
+            terminalManager.clearNotificationIndicator(for: worktree)
           }
         )
       }

@@ -75,7 +75,12 @@ struct AppFeature {
         }
         let settings = repositorySettingsClient.load(worktree.repositoryRootURL)
         state.openActionSelection = OpenWorktreeAction.fromSettingsID(settings.openActionID)
-        return .send(.worktreeInfo(.worktreeChanged(worktree)))
+        return .merge(
+          .send(.worktreeInfo(.worktreeChanged(worktree))),
+          .run { _ in
+            await terminalClient.clearNotificationIndicator(worktree)
+          }
+        )
 
       case .repositories(.delegate(.repositoriesChanged(let repositories))):
         let ids = Set(repositories.flatMap { $0.worktrees.map(\.id) })
