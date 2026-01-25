@@ -428,7 +428,6 @@ struct RepositoriesFeature {
         let selectionWasRemoved,
         let nextSelection
       ):
-        state.deletingWorktreeIDs.remove(worktreeID)
         state.pendingSetupScriptWorktreeIDs.remove(worktreeID)
         let roots = state.repositories.map(\.rootURL)
         if selectionWasRemoved {
@@ -603,6 +602,7 @@ struct RepositoriesFeature {
     let repositoryIDs = Set(repositories.map(\.id))
     state.pendingWorktrees = state.pendingWorktrees.filter { repositoryIDs.contains($0.repositoryID) }
     let availableWorktreeIDs = Set(repositories.flatMap { $0.worktrees.map(\.id) })
+    state.deletingWorktreeIDs = state.deletingWorktreeIDs.intersection(availableWorktreeIDs)
     state.pendingSetupScriptWorktreeIDs = state.pendingSetupScriptWorktreeIDs.filter {
       availableWorktreeIDs.contains($0)
     }

@@ -37,9 +37,10 @@ struct WorktreeRowsView: View {
     shortcutHint: String?
   ) -> some View {
     let taskStatus = terminalManager.focusedTaskStatus(for: row.id)
+    let displayName = row.isDeleting ? "\(row.name) (removing...)" : row.name
     if row.isRemovable, let worktree = store.state.worktree(for: row.id), !isRepositoryRemoving {
       WorktreeRow(
-        name: row.name,
+        name: displayName,
         isPinned: row.isPinned,
         isMainWorktree: row.isMainWorktree,
         isLoading: row.isPending || row.isDeleting,
@@ -69,7 +70,7 @@ struct WorktreeRowsView: View {
       }
     } else {
       WorktreeRow(
-        name: row.name,
+        name: displayName,
         isPinned: row.isPinned,
         isMainWorktree: row.isMainWorktree,
         isLoading: row.isPending || row.isDeleting,
