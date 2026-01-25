@@ -29,7 +29,7 @@ final class SettingsWindowManager {
       return
     }
 
-    guard let store else { return }
+    guard let store, let ghosttyShortcuts, let commandKeyObserver else { return }
     let settingsView = SettingsView(store: store)
       .environment(ghosttyShortcuts)
       .environment(commandKeyObserver)

@@ -74,13 +74,7 @@ struct SettingsView: View {
       case .repository(let repositoryID):
         if let repository = repositories.first(where: { $0.id == repositoryID }) {
           SettingsDetailView {
-            RepositorySettingsView(
-              store: Store(
-                initialState: RepositorySettingsFeature.State(rootURL: repository.rootURL)
-              ) {
-                RepositorySettingsFeature()
-              }
-            )
+            RepositorySettingsContainerView(repository: repository)
             .navigationTitle(repository.name)
             .navigationSubtitle(repository.rootURL.path(percentEncoded: false))
           }

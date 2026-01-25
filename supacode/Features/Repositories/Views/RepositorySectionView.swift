@@ -1,4 +1,3 @@
-import AppKit
 import ComposableArchitecture
 import SwiftUI
 
@@ -14,7 +13,7 @@ struct RepositorySectionView: View {
     let isRemovingRepository = state.isRemovingRepository(repository)
     let openRepoSettings = {
       _ = Task { @MainActor in
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        SettingsWindowManager.shared.show()
         await Task.yield()
         NotificationCenter.default.post(name: .openRepositorySettings, object: repository.id)
       }
