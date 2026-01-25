@@ -1,0 +1,29 @@
+import ComposableArchitecture
+import SwiftUI
+
+struct SidebarFooterView: View {
+  let store: StoreOf<RepositoriesFeature>
+
+  var body: some View {
+    HStack {
+      Button("Add Repository", systemImage: "folder.badge.plus") {
+        store.send(.setOpenPanelPresented(true))
+      }
+      .help("Add Repository (\(AppShortcuts.openRepository.display))")
+      Spacer()
+      Button("Help", systemImage: "questionmark.circle") {
+      }
+      .labelStyle(.iconOnly)
+      .help("Help (no shortcut)")
+      SettingsLink {
+        Label("Settings", systemImage: "gearshape")
+      }
+      .labelStyle(.iconOnly)
+      .help("Settings (no shortcut)")
+    }
+    .buttonStyle(.plain)
+    .padding()
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(.regularMaterial)
+  }
+}

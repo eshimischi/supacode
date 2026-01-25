@@ -23,6 +23,9 @@ struct SidebarListView: View {
     }
     .listStyle(.sidebar)
     .frame(minWidth: 220)
+    .safeAreaInset(edge: .bottom) {
+      SidebarFooterView(store: store)
+    }
     .onChange(of: store.repositories) { _, newValue in
       let current = Set(newValue.map(\.id))
       expandedRepoIDs.formUnion(current)
