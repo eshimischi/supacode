@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		886A649F771240E8A5AC792D /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = 8D787DCF45744283A83F226F /* Dependencies */; };
 		C8B33B9AFE69E738ABFA08BE /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 497B582F42253CBC8FBF101F /* ComposableArchitecture */; };
-		D61414532F1F9799007DF542 /* Bonsplit in Frameworks */ = {isa = PBXBuildFile; productRef = D61414522F1F9799007DF542 /* Bonsplit */; };
 		D64162B02F23CAF100260CA3 /* ghostty in Resources */ = {isa = PBXBuildFile; fileRef = D64162AD2F23CAF100260CA3 /* ghostty */; };
 		D64162B12F23CAF100260CA3 /* terminfo in Resources */ = {isa = PBXBuildFile; fileRef = D64162AE2F23CAF100260CA3 /* terminfo */; };
 		D64162B22F23CAF100260CA3 /* git-wt in Resources */ = {isa = PBXBuildFile; fileRef = D64162AF2F23CAF100260CA3 /* git-wt */; };
@@ -74,7 +73,6 @@
 				886A649F771240E8A5AC792D /* Dependencies in Frameworks */,
 				D6A1CB312F1F4ABF004FDABD /* GhosttyKit.xcframework in Frameworks */,
 				D661760B2F250A60000FC27C /* CasePaths in Frameworks */,
-				D61414532F1F9799007DF542 /* Bonsplit in Frameworks */,
 				D6A1CB362F1F4ACB004FDABD /* Carbon.framework in Frameworks */,
 				DFE570C142184CC387C1BC78 /* Sparkle in Frameworks */,
 			);
@@ -141,7 +139,6 @@
 			);
 			name = supacode;
 			packageProductDependencies = (
-				D61414522F1F9799007DF542 /* Bonsplit */,
 				8D787DCF45744283A83F226F /* Dependencies */,
 				B5698573F7354B14B940EA60 /* Sparkle */,
 				497B582F42253CBC8FBF101F /* ComposableArchitecture */,
@@ -203,7 +200,6 @@
 			mainGroup = D69CE0412F1F378200584C57;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				D61414512F1F9799007DF542 /* XCRemoteSwiftPackageReference "bonsplit" */,
 				911B4AAD84AF4B34BE232133 /* XCRemoteSwiftPackageReference "swift-case-paths" */,
 				8E10C2184F9342AC850013F5 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				46ECCA2394D141A89BE74516 /* XCRemoteSwiftPackageReference "swift-dependencies" */,
@@ -605,14 +601,6 @@
 				minimumVersion = 1.0.0;
 			};
 		};
-		D61414512F1F9799007DF542 /* XCRemoteSwiftPackageReference "bonsplit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/khoi/bonsplit.git";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -630,11 +618,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E10C2184F9342AC850013F5 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
-		};
-		D61414522F1F9799007DF542 /* Bonsplit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = D61414512F1F9799007DF542 /* XCRemoteSwiftPackageReference "bonsplit" */;
-			productName = Bonsplit;
 		};
 		D661760A2F250A60000FC27C /* CasePaths */ = {
 			isa = XCSwiftPackageProductDependency;

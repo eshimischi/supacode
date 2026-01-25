@@ -1,4 +1,3 @@
-import Bonsplit
 import SwiftUI
 
 struct WorktreeTerminalTabsView: View {
@@ -6,41 +5,42 @@ struct WorktreeTerminalTabsView: View {
   let manager: WorktreeTerminalManager
   let shouldRunSetupScript: Bool
   let createTab: () -> Void
-  @Environment(GhosttyShortcutManager.self) private var ghosttyShortcuts
 
   var body: some View {
     let state = manager.state(for: worktree) { shouldRunSetupScript }
-    let newTabShortcut = ghosttyShortcuts.display(for: "new_tab")
-    ZStack(alignment: .topLeading) {
-      BonsplitView(
-        controller: state.controller,
-        content: { tab, _ in
-          TerminalSplitTreeView(tree: state.splitTree(for: tab.id)) { operation in
-            state.performSplitOperation(operation, in: tab.id)
-          }
+    VStack(spacing: 0) {
+      TerminalTabBarView(
+        manager: state.tabManager,
+        createTab: createTab,
+        closeTab: { tabId in
+          state.closeTab(tabId)
         },
-        emptyPane: { _ in
-          EmptyTerminalPaneView(message: "No terminals open")
+        closeOthers: { tabId in
+          state.closeOtherTabs(keeping: tabId)
+        },
+        closeToRight: { tabId in
+          state.closeTabsToRight(of: tabId)
+        },
+        closeAll: {
+          state.closeAllTabs()
         }
       )
-      .overlay(alignment: .topTrailing) {
-        Button("New Terminal", systemImage: "plus") {
-          createTab()
+      if let selectedId = state.tabManager.selectedTabId {
+        TerminalTabContentStack(tabs: state.tabManager.tabs, selectedTabId: selectedId) { tabId in
+          TerminalSplitTreeView(tree: state.splitTree(for: tabId)) { operation in
+            state.performSplitOperation(operation, in: tabId)
+          }
         }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
-        .help(helpText("New Terminal", shortcut: newTabShortcut))
-        .frame(height: state.controller.configuration.appearance.tabBarHeight)
-        .padding(.trailing)
+      } else {
+        EmptyTerminalPaneView(message: "No terminals open")
       }
     }
     .onAppear {
       state.ensureInitialTab()
+      state.focusSelectedTab()
     }
-  }
-
-  private func helpText(_ title: String, shortcut: String?) -> String {
-    guard let shortcut else { return "\(title) (no shortcut)" }
-    return "\(title) (\(shortcut))"
+    .onChange(of: state.tabManager.selectedTabId) { _, _ in
+      state.focusSelectedTab()
+    }
   }
 }

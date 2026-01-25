@@ -1,4 +1,3 @@
-import Bonsplit
 import Observation
 
 @MainActor
@@ -28,10 +27,9 @@ final class WorktreeTerminalManager {
     return state
   }
 
-  @discardableResult
-  func createTab(in worktree: Worktree, pane: PaneID? = nil) -> TabID? {
+  func createTab(in worktree: Worktree) {
     let state = state(for: worktree)
-    return state.createTab(in: pane)
+    _ = state.createTab()
   }
 
   @discardableResult

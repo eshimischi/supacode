@@ -139,7 +139,7 @@ struct AppFeature {
           return .none
         }
         return .run { _ in
-          _ = await terminalClient.createTab(worktree, nil)
+          await terminalClient.createTab(worktree)
         }
 
       case .closeTab:

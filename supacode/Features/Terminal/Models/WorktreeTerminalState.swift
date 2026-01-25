@@ -1,4 +1,3 @@
-import Bonsplit
 import CoreGraphics
 import Foundation
 import GhosttyKit
@@ -6,37 +5,26 @@ import Observation
 
 @MainActor
 @Observable
-final class WorktreeTerminalState: BonsplitDelegate {
-  let controller: BonsplitController
+final class WorktreeTerminalState {
+  let tabManager: TerminalTabManager
   private let runtime: GhosttyRuntime
   private let worktree: Worktree
   private let settingsStorage = RepositorySettingsStorage()
-  private var trees: [TabID: SplitTree<GhosttySurfaceView>] = [:]
+  private var trees: [TerminalTabID: SplitTree<GhosttySurfaceView>] = [:]
   private var surfaces: [UUID: GhosttySurfaceView] = [:]
-  private var focusedSurfaceIdByTab: [TabID: UUID] = [:]
-  private var tabIsRunningById: [TabID: Bool] = [:]
+  private var focusedSurfaceIdByTab: [TerminalTabID: UUID] = [:]
+  private var tabIsRunningById: [TerminalTabID: Bool] = [:]
   private var pendingSetupScript: Bool
 
   init(runtime: GhosttyRuntime, worktree: Worktree, runSetupScript: Bool = false) {
     self.runtime = runtime
     self.worktree = worktree
-    pendingSetupScript = runSetupScript
-    let configuration = BonsplitConfiguration(
-      allowSplits: false,
-      allowCloseTabs: true,
-      allowCloseLastPane: false,
-      allowTabReordering: true,
-      allowCrossPaneTabMove: false,
-      autoCloseEmptyPanes: false,
-      contentViewLifecycle: .keepAllAlive,
-      newTabPosition: .current
-    )
-    controller = BonsplitController(configuration: configuration)
-    controller.delegate = self
+    self.pendingSetupScript = runSetupScript
+    self.tabManager = TerminalTabManager()
   }
 
   var focusedTaskStatus: WorktreeTaskStatus {
-    guard let tabId = focusedTabId() else { return .idle }
+    guard let tabId = tabManager.selectedTabId else { return .idle }
     if tabIsRunningById[tabId] == true {
       return .running
     }
@@ -44,58 +32,48 @@ final class WorktreeTerminalState: BonsplitDelegate {
   }
 
   func ensureInitialTab() {
-    let tabIds = controller.allTabIds
-    if tabIds.isEmpty {
-      _ = createTab(in: nil)
-      return
-    }
-    if tabIds.count == 1, let tabId = tabIds.first, let tab = controller.tab(tabId),
-      tab.title == "Welcome"
-    {
-      let title = "\(worktree.name) \(nextTabIndex())"
-      controller.updateTab(tabId, title: title, icon: "terminal")
+    if tabManager.tabs.isEmpty {
+      _ = createTab()
     }
   }
 
   @discardableResult
-  func createTab(in pane: PaneID?) -> TabID? {
+  func createTab() -> TerminalTabID? {
     let title = "\(worktree.name) \(nextTabIndex())"
-    guard
-      let tabId = controller.createTab(
-        title: title,
-        icon: "terminal",
-        inPane: pane
-      )
-    else {
-      return nil
+    let tabId = tabManager.createTab(title: title, icon: "terminal")
+    let resolvedInput = setupScriptInput(shouldRun: pendingSetupScript)
+    if pendingSetupScript {
+      pendingSetupScript = false
     }
-    controller.selectTab(tabId)
-    let tree = splitTree(for: tabId)
+    let tree = splitTree(for: tabId, initialInput: resolvedInput)
+    tabIsRunningById[tabId] = false
     if let surface = tree.root?.leftmostLeaf() {
       focusSurface(surface, in: tabId)
     }
     return tabId
   }
 
+  func selectTab(_ tabId: TerminalTabID) {
+    tabManager.selectTab(tabId)
+    focusSurface(in: tabId)
+  }
+
+  func focusSelectedTab() {
+    guard let tabId = tabManager.selectedTabId else { return }
+    focusSurface(in: tabId)
+  }
+
   @discardableResult
   func closeFocusedTab() -> Bool {
-    guard let paneId = controller.focusedPaneId,
-      let tab = controller.selectedTab(inPane: paneId)
-    else {
-      return false
-    }
-    let closed = controller.closeTab(tab.id)
-    if closed, let nextTab = controller.selectedTab(inPane: paneId) {
-      controller.selectTab(nextTab.id)
-    }
-    return closed
+    guard let tabId = tabManager.selectedTabId else { return false }
+    closeTab(tabId)
+    return true
   }
 
   @discardableResult
   func closeFocusedSurface() -> Bool {
-    guard let paneId = controller.focusedPaneId,
-      let tab = controller.selectedTab(inPane: paneId),
-      let focusedId = focusedSurfaceIdByTab[tab.id],
+    guard let tabId = tabManager.selectedTabId,
+      let focusedId = focusedSurfaceIdByTab[tabId],
       let surface = surfaces[focusedId]
     else {
       return false
@@ -104,7 +82,40 @@ final class WorktreeTerminalState: BonsplitDelegate {
     return true
   }
 
-  func splitTree(for tabId: TabID, initialInput: String? = nil) -> SplitTree<GhosttySurfaceView> {
+  func closeTab(_ tabId: TerminalTabID) {
+    removeTree(for: tabId)
+    tabManager.closeTab(tabId)
+    if let selected = tabManager.selectedTabId {
+      focusSurface(in: selected)
+    }
+  }
+
+  func closeOtherTabs(keeping tabId: TerminalTabID) {
+    let ids = tabManager.tabs.map(\.id).filter { $0 != tabId }
+    for id in ids {
+      closeTab(id)
+    }
+  }
+
+  func closeTabsToRight(of tabId: TerminalTabID) {
+    guard let index = tabManager.tabs.firstIndex(where: { $0.id == tabId }) else { return }
+    let ids = tabManager.tabs.dropFirst(index + 1).map(\.id)
+    for id in ids {
+      closeTab(id)
+    }
+  }
+
+  func closeAllTabs() {
+    let ids = tabManager.tabs.map(\.id)
+    for id in ids {
+      closeTab(id)
+    }
+  }
+
+  func splitTree(
+    for tabId: TerminalTabID,
+    initialInput: String? = nil
+  ) -> SplitTree<GhosttySurfaceView> {
     if let existing = trees[tabId] {
       return existing
     }
@@ -183,7 +194,7 @@ final class WorktreeTerminalState: BonsplitDelegate {
     }
   }
 
-  func performSplitOperation(_ operation: TerminalSplitTreeView.Operation, in tabId: TabID) {
+  func performSplitOperation(_ operation: TerminalSplitTreeView.Operation, in tabId: TerminalTabID) {
     guard var tree = trees[tabId] else { return }
 
     switch operation {
@@ -220,6 +231,17 @@ final class WorktreeTerminalState: BonsplitDelegate {
     }
   }
 
+  func closeAllSurfaces() {
+    for surface in surfaces.values {
+      surface.closeSurface()
+    }
+    surfaces.removeAll()
+    trees.removeAll()
+    focusedSurfaceIdByTab.removeAll()
+    tabIsRunningById.removeAll()
+    tabManager.closeAll()
+  }
+
   private func setupScriptInput(shouldRun: Bool) -> String? {
     guard shouldRun else { return nil }
     let settings = settingsStorage.load(for: worktree.repositoryRootURL)
@@ -234,34 +256,7 @@ final class WorktreeTerminalState: BonsplitDelegate {
     return "\(script)\n"
   }
 
-  func closeAllSurfaces() {
-    for surface in surfaces.values {
-      surface.closeSurface()
-    }
-    surfaces.removeAll()
-    trees.removeAll()
-    focusedSurfaceIdByTab.removeAll()
-    tabIsRunningById.removeAll()
-  }
-
-  func splitTabBar(
-    _ controller: BonsplitController, didCloseTab tabId: TabID, fromPane pane: PaneID
-  ) {
-    removeTree(for: tabId)
-  }
-
-  func splitTabBar(_ controller: BonsplitController, didSelectTab tab: Tab, inPane pane: PaneID) {
-    let tree = splitTree(for: tab.id)
-    if let focusedId = focusedSurfaceIdByTab[tab.id], let focused = surfaces[focusedId] {
-      focusSurface(focused, in: tab.id)
-      return
-    }
-    if let surface = tree.root?.leftmostLeaf() {
-      focusSurface(surface, in: tab.id)
-    }
-  }
-
-  private func createSurface(tabId: TabID, initialInput: String?) -> GhosttySurfaceView {
+  private func createSurface(tabId: TerminalTabID, initialInput: String?) -> GhosttySurfaceView {
     let view = GhosttySurfaceView(
       runtime: runtime,
       workingDirectory: worktree.workingDirectory,
@@ -270,59 +265,70 @@ final class WorktreeTerminalState: BonsplitDelegate {
     view.bridge.onTitleChange = { [weak self, weak view] title in
       guard let self, let view else { return }
       if self.focusedSurfaceIdByTab[tabId] == view.id {
-        self.controller.updateTab(tabId, title: title, icon: "terminal")
+        self.tabManager.updateTitle(tabId, title: title)
       }
     }
     view.bridge.onSplitAction = { [weak self, weak view] action in
       guard let self, let view else { return false }
       return self.performSplitAction(action, for: view.id)
     }
-    view.bridge.onNewTab = { [weak self, weak view] in
-      guard let self, let view else { return false }
-      return self.handleNewTabRequest(from: view)
+    view.bridge.onNewTab = { [weak self] in
+      guard let self else { return false }
+      return self.createTab() != nil
     }
-    view.bridge.onCloseTab = { [weak self, weak view] mode in
-      guard let self, let view else { return false }
-      return self.handleCloseTabRequest(from: view, mode: mode)
+    view.bridge.onCloseTab = { [weak self] _ in
+      guard let self else { return false }
+      self.closeTab(tabId)
+      return true
     }
     view.bridge.onGotoTab = { [weak self] target in
       guard let self else { return false }
       return self.handleGotoTabRequest(target)
     }
-    view.bridge.onProgressReport = { [weak self, weak view] _ in
-      guard let self, let view else { return }
-      self.handleProgressReport(for: view.id)
+    view.bridge.onProgressReport = { [weak self] _ in
+      guard let self else { return }
+      self.updateRunningState(for: tabId)
     }
     view.bridge.onCloseRequest = { [weak self, weak view] processAlive in
       guard let self, let view else { return }
       self.handleCloseRequest(for: view, processAlive: processAlive)
     }
     view.onFocusChange = { [weak self, weak view] focused in
-      guard let self, let view else { return }
-      guard focused else { return }
+      guard let self, let view, focused else { return }
       self.focusedSurfaceIdByTab[tabId] = view.id
+      self.tabManager.selectTab(tabId)
       self.updateTabTitle(for: tabId)
     }
     surfaces[view.id] = view
     return view
   }
 
-  private func updateTabTitle(for tabId: TabID) {
+  private func updateTabTitle(for tabId: TerminalTabID) {
     guard let focusedId = focusedSurfaceIdByTab[tabId],
-      let surface = surfaces[focusedId]
+      let surface = surfaces[focusedId],
+      let title = surface.bridge.state.title
     else { return }
-    if let title = surface.bridge.state.title {
-      controller.updateTab(tabId, title: title, icon: "terminal")
+    tabManager.updateTitle(tabId, title: title)
+  }
+
+  private func focusSurface(in tabId: TerminalTabID) {
+    if let focusedId = focusedSurfaceIdByTab[tabId], let surface = surfaces[focusedId] {
+      focusSurface(surface, in: tabId)
+      return
+    }
+    let tree = splitTree(for: tabId)
+    if let surface = tree.root?.leftmostLeaf() {
+      focusSurface(surface, in: tabId)
     }
   }
 
-  private func focusSurface(_ surface: GhosttySurfaceView, in tabId: TabID) {
+  private func focusSurface(_ surface: GhosttySurfaceView, in tabId: TerminalTabID) {
     focusedSurfaceIdByTab[tabId] = surface.id
     surface.requestFocus()
     updateTabTitle(for: tabId)
   }
 
-  private func removeTree(for tabId: TabID) {
+  private func removeTree(for tabId: TerminalTabID) {
     guard let tree = trees.removeValue(forKey: tabId) else { return }
     for surface in tree.leaves() {
       surface.closeSurface()
@@ -332,31 +338,20 @@ final class WorktreeTerminalState: BonsplitDelegate {
     tabIsRunningById.removeValue(forKey: tabId)
   }
 
-  private func tabId(containing surfaceId: UUID) -> TabID? {
+  private func tabId(containing surfaceId: UUID) -> TerminalTabID? {
     for (tabId, tree) in trees where tree.find(id: surfaceId) != nil {
       return tabId
     }
     return nil
   }
 
-  private func focusedTabId() -> TabID? {
-    guard let paneId = controller.focusedPaneId,
-      let tab = controller.selectedTab(inPane: paneId)
-    else { return nil }
-    return tab.id
-  }
-
-  private func handleProgressReport(for surfaceId: UUID) {
-    guard let tabId = tabId(containing: surfaceId) else { return }
-    updateRunningState(for: tabId)
-  }
-
-  private func updateRunningState(for tabId: TabID) {
+  private func updateRunningState(for tabId: TerminalTabID) {
     guard let tree = trees[tabId] else { return }
     let isRunningNow = tree.leaves().contains { surface in
       isRunningProgressState(surface.bridge.state.progressState)
     }
     tabIsRunningById[tabId] = isRunningNow
+    tabManager.updateDirty(tabId, isDirty: isRunningNow)
   }
 
   private func isRunningProgressState(_ state: ghostty_action_progress_report_state_e?) -> Bool {
@@ -420,7 +415,7 @@ final class WorktreeTerminalState: BonsplitDelegate {
     }
   }
 
-  private func handleCloseRequest(for view: GhosttySurfaceView, processAlive: Bool) {
+  private func handleCloseRequest(for view: GhosttySurfaceView, processAlive _: Bool) {
     guard surfaces[view.id] != nil else { return }
     guard let tabId = tabId(containing: view.id), let tree = trees[tabId] else {
       view.closeSurface()
@@ -438,7 +433,7 @@ final class WorktreeTerminalState: BonsplitDelegate {
     if newTree.isEmpty {
       trees.removeValue(forKey: tabId)
       focusedSurfaceIdByTab.removeValue(forKey: tabId)
-      controller.closeTab(tabId)
+      tabManager.closeTab(tabId)
       return
     }
     trees[tabId] = newTree
@@ -452,27 +447,12 @@ final class WorktreeTerminalState: BonsplitDelegate {
     }
   }
 
-  private func handleNewTabRequest(from view: GhosttySurfaceView) -> Bool {
-    let paneId = controller.focusedPaneId
-    return createTab(in: paneId) != nil
-  }
-
-  private func handleCloseTabRequest(
-    from view: GhosttySurfaceView,
-    mode: ghostty_action_close_tab_mode_e
-  ) -> Bool {
-    _ = view
-    _ = mode
-    return closeFocusedTab()
-  }
-
   private func handleGotoTabRequest(_ target: ghostty_action_goto_tab_e) -> Bool {
-    guard let paneId = controller.focusedPaneId else { return false }
-    let tabs = controller.tabs(inPane: paneId)
+    let tabs = tabManager.tabs
     guard !tabs.isEmpty else { return false }
     let raw = Int(target.rawValue)
-    let selectedIndex = controller.selectedTab(inPane: paneId).flatMap { selected in
-      tabs.firstIndex { $0.id == selected.id }
+    let selectedIndex = tabManager.selectedTabId.flatMap { selected in
+      tabs.firstIndex { $0.id == selected }
     }
     let targetIndex: Int
     if raw <= 0 {
@@ -491,7 +471,7 @@ final class WorktreeTerminalState: BonsplitDelegate {
     } else {
       targetIndex = min(raw - 1, tabs.count - 1)
     }
-    controller.selectTab(tabs[targetIndex].id)
+    selectTab(tabs[targetIndex].id)
     return true
   }
 
@@ -513,10 +493,9 @@ final class WorktreeTerminalState: BonsplitDelegate {
   private func nextTabIndex() -> Int {
     let prefix = "\(worktree.name) "
     var maxIndex = 0
-    for tabId in controller.allTabIds {
-      guard let title = controller.tab(tabId)?.title else { continue }
-      guard title.hasPrefix(prefix) else { continue }
-      let suffix = title.dropFirst(prefix.count)
+    for tab in tabManager.tabs {
+      guard tab.title.hasPrefix(prefix) else { continue }
+      let suffix = tab.title.dropFirst(prefix.count)
       guard let value = Int(suffix) else { continue }
       maxIndex = max(maxIndex, value)
     }

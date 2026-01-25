@@ -2,15 +2,6 @@
   "originHash" : "43322c6a49f021170260ea4d20825af757f2bd058aed86f9c6aaa57371d0e286",
   "pins" : [
     {
-      "identity" : "bonsplit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/khoi/bonsplit.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "5ff46b1f9e7d9a78250bad5b52d5794ff3f8c033"
-      }
-    },
-    {
       "identity" : "combine-schedulers",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/combine-schedulers",

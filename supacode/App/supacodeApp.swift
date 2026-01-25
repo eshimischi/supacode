@@ -53,8 +53,8 @@ struct SupacodeApp: App {
         AppFeature()
       } withDependencies: { values in
         values.terminalClient = TerminalClient(
-          createTab: { worktree, pane in
-            terminalManager.createTab(in: worktree, pane: pane)
+          createTab: { worktree in
+            terminalManager.createTab(in: worktree)
           },
           closeFocusedTab: { worktree in
             terminalManager.closeFocusedTab(in: worktree)
