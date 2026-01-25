@@ -10,7 +10,6 @@ struct AppFeature {
     var settings: SettingsFeature.State
     var updates = UpdatesFeature.State()
     var openActionSelection: OpenWorktreeAction = .finder
-    var didConfigureUpdates = false
     @Presents var alert: AlertState<Alert>?
 
     init(
@@ -87,14 +86,11 @@ struct AppFeature {
         return .none
 
       case .settings(.delegate(.settingsChanged(let settings))):
-        let checkInBackground = !state.didConfigureUpdates
-        state.didConfigureUpdates = true
         return .send(
           .updates(
             .applySettings(
               automaticallyChecks: settings.updatesAutomaticallyCheckForUpdates,
-              automaticallyDownloads: settings.updatesAutomaticallyDownloadUpdates,
-              checkInBackground: checkInBackground
+              automaticallyDownloads: settings.updatesAutomaticallyDownloadUpdates
             )
           )
         )

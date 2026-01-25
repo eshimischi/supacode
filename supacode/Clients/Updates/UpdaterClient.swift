@@ -14,14 +14,12 @@ extension UpdaterClient: DependencyKey {
       userDriverDelegate: nil
     )
     let updater = controller.updater
-    var didCheckInBackground = false
     return UpdaterClient(
       configure: { checks, downloads, checkInBackground in
         _ = controller
         updater.automaticallyChecksForUpdates = checks
         updater.automaticallyDownloadsUpdates = downloads
-        if checkInBackground, checks, !didCheckInBackground {
-          didCheckInBackground = true
+        if checkInBackground, checks {
           updater.checkForUpdatesInBackground()
         }
       },

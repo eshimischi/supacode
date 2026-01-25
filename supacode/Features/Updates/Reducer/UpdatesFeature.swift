@@ -4,13 +4,13 @@ import ComposableArchitecture
 struct UpdatesFeature {
   @ObservableState
   struct State: Equatable {
+    var didConfigureUpdates = false
   }
 
   enum Action: Equatable {
     case applySettings(
       automaticallyChecks: Bool,
-      automaticallyDownloads: Bool,
-      checkInBackground: Bool
+      automaticallyDownloads: Bool
     )
     case checkForUpdates
   }
@@ -18,9 +18,11 @@ struct UpdatesFeature {
   @Dependency(\.updaterClient) private var updaterClient
 
   var body: some Reducer<State, Action> {
-    Reduce { _, action in
+    Reduce { state, action in
       switch action {
-      case let .applySettings(checks, downloads, checkInBackground):
+      case let .applySettings(checks, downloads):
+        let checkInBackground = !state.didConfigureUpdates
+        state.didConfigureUpdates = true
         return .run { _ in
           await updaterClient.configure(checks, downloads, checkInBackground)
         }
