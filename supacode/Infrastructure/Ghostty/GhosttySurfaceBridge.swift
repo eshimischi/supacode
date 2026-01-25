@@ -13,6 +13,7 @@ final class GhosttySurfaceBridge {
   var onCloseTab: ((ghostty_action_close_tab_mode_e) -> Bool)?
   var onGotoTab: ((ghostty_action_goto_tab_e) -> Bool)?
   var onProgressReport: ((ghostty_action_progress_report_state_e) -> Void)?
+  var onDesktopNotification: ((String, String) -> Void)?
   private var progressResetTask: Task<Void, Never>?
 
   deinit {
@@ -163,8 +164,10 @@ final class GhosttySurfaceBridge {
 
     case GHOSTTY_ACTION_DESKTOP_NOTIFICATION:
       let note = action.action.desktop_notification
-      state.desktopNotificationTitle = string(from: note.title)
-      state.desktopNotificationBody = string(from: note.body)
+      let title = string(from: note.title) ?? ""
+      let body = string(from: note.body) ?? ""
+      guard !(title.isEmpty && body.isEmpty) else { return true }
+      onDesktopNotification?(title, body)
       return true
 
     default:

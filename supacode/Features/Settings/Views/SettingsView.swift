@@ -30,6 +30,8 @@ struct SettingsView: View {
             .tag(SettingsSection.chat)
           Label("Appearance", systemImage: "paintpalette")
             .tag(SettingsSection.appearance)
+          Label("Notifications", systemImage: "bell")
+            .tag(SettingsSection.notifications)
           Label("Updates", systemImage: "arrow.down.circle")
             .tag(SettingsSection.updates)
 
@@ -64,6 +66,12 @@ struct SettingsView: View {
           AppearanceSettingsView(store: settingsStore)
             .navigationTitle("Appearance")
             .navigationSubtitle("Theme and visuals")
+        }
+      case .notifications:
+        SettingsDetailView {
+          NotificationsSettingsView(store: settingsStore)
+            .navigationTitle("Notifications")
+            .navigationSubtitle("In-app alerts and delivery")
         }
       case .updates:
         SettingsDetailView {

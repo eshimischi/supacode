@@ -91,13 +91,18 @@ struct AppFeature {
         return .none
 
       case .settings(.delegate(.settingsChanged(let settings))):
-        return .send(
-          .updates(
-            .applySettings(
-              automaticallyChecks: settings.updatesAutomaticallyCheckForUpdates,
-              automaticallyDownloads: settings.updatesAutomaticallyDownloadUpdates
+        return .merge(
+          .send(
+            .updates(
+              .applySettings(
+                automaticallyChecks: settings.updatesAutomaticallyCheckForUpdates,
+                automaticallyDownloads: settings.updatesAutomaticallyDownloadUpdates
+              )
             )
-          )
+          ),
+          .run { _ in
+            await terminalClient.setNotificationsEnabled(settings.inAppNotificationsEnabled)
+          }
         )
 
       case .openActionSelectionChanged(let action):

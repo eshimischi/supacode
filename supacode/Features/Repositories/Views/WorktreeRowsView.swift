@@ -37,6 +37,7 @@ struct WorktreeRowsView: View {
     shortcutHint: String?
   ) -> some View {
     let taskStatus = terminalManager.focusedTaskStatus(for: row.id)
+    let paneCount = terminalManager.paneCount(for: row.id)
     let displayName = row.isDeleting ? "\(row.name) (removing...)" : row.name
     if row.isRemovable, let worktree = store.state.worktree(for: row.id), !isRepositoryRemoving {
       WorktreeRow(
@@ -45,6 +46,7 @@ struct WorktreeRowsView: View {
         isMainWorktree: row.isMainWorktree,
         isLoading: row.isPending || row.isDeleting,
         taskStatus: taskStatus,
+        paneCount: paneCount,
         shortcutHint: shortcutHint
       )
       .tag(SidebarSelection.worktree(row.id))
@@ -75,6 +77,7 @@ struct WorktreeRowsView: View {
         isMainWorktree: row.isMainWorktree,
         isLoading: row.isPending || row.isDeleting,
         taskStatus: taskStatus,
+        paneCount: paneCount,
         shortcutHint: shortcutHint
       )
       .tag(SidebarSelection.worktree(row.id))

@@ -8,18 +8,21 @@ struct SettingsFeature {
     var appearanceMode: AppearanceMode
     var updatesAutomaticallyCheckForUpdates: Bool
     var updatesAutomaticallyDownloadUpdates: Bool
+    var inAppNotificationsEnabled: Bool
 
     init(settings: GlobalSettings = .default) {
       appearanceMode = settings.appearanceMode
       updatesAutomaticallyCheckForUpdates = settings.updatesAutomaticallyCheckForUpdates
       updatesAutomaticallyDownloadUpdates = settings.updatesAutomaticallyDownloadUpdates
+      inAppNotificationsEnabled = settings.inAppNotificationsEnabled
     }
 
     var globalSettings: GlobalSettings {
       GlobalSettings(
         appearanceMode: appearanceMode,
         updatesAutomaticallyCheckForUpdates: updatesAutomaticallyCheckForUpdates,
-        updatesAutomaticallyDownloadUpdates: updatesAutomaticallyDownloadUpdates
+        updatesAutomaticallyDownloadUpdates: updatesAutomaticallyDownloadUpdates,
+        inAppNotificationsEnabled: inAppNotificationsEnabled
       )
     }
   }
@@ -29,6 +32,7 @@ struct SettingsFeature {
     case setAppearanceMode(AppearanceMode)
     case setUpdatesAutomaticallyCheckForUpdates(Bool)
     case setUpdatesAutomaticallyDownloadUpdates(Bool)
+    case setInAppNotificationsEnabled(Bool)
     case delegate(Delegate)
   }
 
@@ -60,6 +64,12 @@ struct SettingsFeature {
 
       case .setUpdatesAutomaticallyDownloadUpdates(let value):
         state.updatesAutomaticallyDownloadUpdates = value
+        let settings = state.globalSettings
+        settingsClient.save(settings)
+        return .send(.delegate(.settingsChanged(settings)))
+
+      case .setInAppNotificationsEnabled(let value):
+        state.inAppNotificationsEnabled = value
         let settings = state.globalSettings
         settingsClient.save(settings)
         return .send(.delegate(.settingsChanged(settings)))

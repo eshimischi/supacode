@@ -46,7 +46,5 @@ final class GhosttySurfaceState {
   var openConfigCount: Int = 0
   var presentTerminalCount: Int = 0
   var resetWindowSizeCount: Int = 0
-  var desktopNotificationTitle: String?
-  var desktopNotificationBody: String?
   var quitTimer: ghostty_action_quit_timer_e?
 }

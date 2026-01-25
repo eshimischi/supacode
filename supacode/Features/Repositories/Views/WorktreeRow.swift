@@ -6,6 +6,7 @@ struct WorktreeRow: View {
   let isMainWorktree: Bool
   let isLoading: Bool
   let taskStatus: WorktreeTaskStatus?
+  let paneCount: Int?
   let shortcutHint: String?
 
   var body: some View {
@@ -25,6 +26,12 @@ struct WorktreeRow: View {
       }
       Text(name)
       Spacer(minLength: 8)
+      if let paneCount, paneCount > 0 {
+        Text("\(paneCount)")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .monospacedDigit()
+      }
       if let shortcutHint {
         ShortcutHintView(text: shortcutHint, color: .secondary)
       }

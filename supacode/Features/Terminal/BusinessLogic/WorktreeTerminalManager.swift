@@ -5,6 +5,7 @@ import Observation
 final class WorktreeTerminalManager {
   private let runtime: GhosttyRuntime
   private var states: [Worktree.ID: WorktreeTerminalState] = [:]
+  private var notificationsEnabled = true
 
   init(runtime: GhosttyRuntime) {
     self.runtime = runtime
@@ -23,6 +24,7 @@ final class WorktreeTerminalManager {
       worktree: worktree,
       runSetupScript: runSetupScript
     )
+    state.setNotificationsEnabled(notificationsEnabled)
     states[worktree.id] = state
     return state
   }
@@ -57,5 +59,16 @@ final class WorktreeTerminalManager {
 
   func focusedTaskStatus(for worktreeID: Worktree.ID) -> WorktreeTaskStatus? {
     states[worktreeID]?.focusedTaskStatus
+  }
+
+  func paneCount(for worktreeID: Worktree.ID) -> Int? {
+    states[worktreeID]?.paneCount
+  }
+
+  func setNotificationsEnabled(_ enabled: Bool) {
+    notificationsEnabled = enabled
+    for state in states.values {
+      state.setNotificationsEnabled(enabled)
+    }
   }
 }
