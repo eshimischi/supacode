@@ -77,6 +77,7 @@ Always read `./docs/swift-rules.md` before writing Swift code. Key points:
 - After a task, ensure the app builds: `make build-app`
 - Use Peekabo skill to verify UI behavior if necessary
 - To inspect a Swift PM package, clone it with `gj get {git_url}`
+- Automatically commit your changes and your changes only. Do not use `git add .`
 
 ## References
 
