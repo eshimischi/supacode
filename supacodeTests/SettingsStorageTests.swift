@@ -51,6 +51,33 @@ struct SettingsStorageTests {
     #expect(decoded == .default)
   }
 
+  @Test func migratesOldSettingsWithoutInAppNotificationsEnabled() throws {
+    let root = try makeTempDirectory()
+    defer { try? FileManager.default.removeItem(at: root) }
+    let settingsURL = root.appending(path: "settings.json")
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+    let oldSettings = """
+      {
+        "global": {
+          "appearanceMode": "dark",
+          "updatesAutomaticallyCheckForUpdates": false,
+          "updatesAutomaticallyDownloadUpdates": true
+        },
+        "repositories": {}
+      }
+      """
+    try Data(oldSettings.utf8).write(to: settingsURL)
+
+    let storage = SettingsStorage(settingsURL: settingsURL)
+    let settings = storage.load()
+
+    #expect(settings.global.appearanceMode == .dark)
+    #expect(settings.global.updatesAutomaticallyCheckForUpdates == false)
+    #expect(settings.global.updatesAutomaticallyDownloadUpdates == true)
+    #expect(settings.global.inAppNotificationsEnabled == true)
+  }
+
   private func makeTempDirectory() throws -> URL {
     let url = FileManager.default.temporaryDirectory
       .appending(path: UUID().uuidString, directoryHint: .isDirectory)
