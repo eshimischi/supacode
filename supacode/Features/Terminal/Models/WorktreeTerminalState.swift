@@ -67,6 +67,7 @@ final class WorktreeTerminalState {
   func selectTab(_ tabId: TerminalTabID) {
     tabManager.selectTab(tabId)
     focusSurface(in: tabId)
+    emitTaskStatusIfChanged()
   }
 
   func focusSelectedTab() {
@@ -337,6 +338,8 @@ final class WorktreeTerminalState {
       self.focusedSurfaceIdByTab[tabId] = view.id
       self.tabManager.selectTab(tabId)
       self.updateTabTitle(for: tabId)
+      self.onFocusChanged?(view.id)
+      self.emitTaskStatusIfChanged()
     }
     surfaces[view.id] = view
     return view
@@ -408,6 +411,10 @@ final class WorktreeTerminalState {
     }
     tabIsRunningById[tabId] = isRunningNow
     tabManager.updateDirty(tabId, isDirty: isRunningNow)
+    emitTaskStatusIfChanged()
+  }
+
+  private func emitTaskStatusIfChanged() {
     let newStatus = focusedTaskStatus
     if newStatus != lastReportedTaskStatus {
       lastReportedTaskStatus = newStatus
