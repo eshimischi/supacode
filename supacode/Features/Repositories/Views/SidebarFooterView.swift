@@ -14,7 +14,7 @@ struct SidebarFooterView: View {
       Button("Help", systemImage: "questionmark.circle") {
       }
       .labelStyle(.iconOnly)
-      .help("Help (no shortcut)")
+      .help("Help")
       SettingsLink {
         Label("Settings", systemImage: "gearshape")
       }

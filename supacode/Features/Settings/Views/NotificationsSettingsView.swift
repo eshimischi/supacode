@@ -15,7 +15,7 @@ struct NotificationsSettingsView: View {
               set: { store.send(.setInAppNotificationsEnabled($0)) }
             )
           )
-          .help("Show bell icon next to worktree (no shortcut)")
+          .help("Show bell icon next to worktree")
           Toggle(
             "Play notification sound",
             isOn: Binding(
@@ -23,7 +23,7 @@ struct NotificationsSettingsView: View {
               set: { store.send(.setNotificationSoundEnabled($0)) }
             )
           )
-          .help("Play a sound when a notification is received (no shortcut)")
+          .help("Play a sound when a notification is received")
         }
       }
       .formStyle(.grouped)

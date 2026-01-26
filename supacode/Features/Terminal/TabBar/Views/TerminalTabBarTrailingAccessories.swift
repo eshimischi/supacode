@@ -18,7 +18,7 @@ struct TerminalTabBarTrailingAccessories: View {
   }
 
   private func helpText(_ title: String, shortcut: String?) -> String {
-    guard let shortcut else { return "\(title) (no shortcut)" }
+    guard let shortcut else { return title }
     return "\(title) (\(shortcut))"
   }
 }

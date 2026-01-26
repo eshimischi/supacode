@@ -17,7 +17,7 @@ struct WorktreeNotificationsListView: View {
               .frame(maxWidth: .infinity, alignment: .leading)
           }
           .buttonStyle(.plain)
-          .help("Focus pane (no shortcut)")
+          .help("Focus pane")
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)

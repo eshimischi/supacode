@@ -142,7 +142,7 @@ struct WorktreeDetailView: View {
       .imageScale(.small)
       .menuIndicator(.hidden)
       .fixedSize()
-      .help("Open in... (no shortcut)")
+      .help("Open in...")
     }
   }
 

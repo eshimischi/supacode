@@ -30,7 +30,7 @@ struct WorktreeRow: View {
         Image(systemName: "bell.fill")
           .font(.caption)
           .foregroundStyle(.orange)
-          .help("Unread notifications (no shortcut)")
+          .help("Unread notifications")
           .accessibilityLabel("Unread notifications")
       }
       if let shortcutHint {

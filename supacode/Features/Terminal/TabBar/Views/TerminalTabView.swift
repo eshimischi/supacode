@@ -52,7 +52,7 @@ struct TerminalTabView: View {
       isHovering = hovering
     }
     .zIndex(isActive ? 2 : (isDragging ? 3 : 0))
-    .help("Open tab \(tab.title) (no shortcut)")
+    .help("Open tab \(tab.title)")
     .accessibilityLabel(tab.title)
   }
 }

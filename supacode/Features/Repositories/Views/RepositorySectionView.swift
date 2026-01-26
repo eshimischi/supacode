@@ -51,11 +51,11 @@ struct RepositorySectionView: View {
           Button("Repo Settings") {
             openRepoSettings()
           }
-          .help("Repo Settings (no shortcut)")
+          .help("Repo Settings ")
           Button("Remove Repository") {
             store.send(.requestRemoveRepository(repository.id))
           }
-          .help("Remove repository (no shortcut)")
+          .help("Remove repository ")
           .disabled(isRemovingRepository)
         }
         if isRemovingRepository {
@@ -66,11 +66,11 @@ struct RepositorySectionView: View {
           Button("Repo Settings") {
             openRepoSettings()
           }
-          .help("Repo Settings (no shortcut)")
+          .help("Repo Settings ")
           Button("Remove Repository") {
             store.send(.requestRemoveRepository(repository.id))
           }
-          .help("Remove repository (no shortcut)")
+          .help("Remove repository ")
           .disabled(isRemovingRepository)
         } label: {
           Label("Repository options", systemImage: "ellipsis")
@@ -78,7 +78,7 @@ struct RepositorySectionView: View {
         .labelStyle(.iconOnly)
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
-        .help("Repository options (no shortcut)")
+        .help("Repository options ")
         .disabled(isRemovingRepository)
         Button("New Worktree", systemImage: "plus") {
           store.send(.createRandomWorktreeInRepository(repository.id))

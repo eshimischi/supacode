@@ -58,12 +58,12 @@ struct WorktreeRowsView: View {
             Button("Unpin") {
               store.send(.unpinWorktree(worktree.id))
             }
-            .help("Unpin (no shortcut)")
+            .help("Unpin")
           } else {
             Button("Pin to top") {
               store.send(.pinWorktree(worktree.id))
             }
-            .help("Pin to top (no shortcut)")
+            .help("Pin to top")
           }
         }
         Button("Copy Path") {
