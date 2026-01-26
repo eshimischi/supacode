@@ -1,41 +1,38 @@
 import ComposableArchitecture
+import Foundation
 
 struct TerminalClient {
-  var createTab: @MainActor @Sendable (Worktree) -> Void
-  var closeFocusedTab: @MainActor @Sendable (Worktree) -> Bool
-  var closeFocusedSurface: @MainActor @Sendable (Worktree) -> Bool
-  var prune: @MainActor @Sendable (Set<Worktree.ID>) -> Void
-  var setNotificationsEnabled: @MainActor @Sendable (Bool) -> Void
-  var clearNotificationIndicator: @MainActor @Sendable (Worktree) -> Void
+  var send: @MainActor @Sendable (Command) -> Void
+  var events: @MainActor @Sendable () -> AsyncStream<Event>
+
+  enum Command: Equatable {
+    case createTab(Worktree)
+    case closeFocusedTab(Worktree)
+    case closeFocusedSurface(Worktree)
+    case prune(Set<Worktree.ID>)
+    case setNotificationsEnabled(Bool)
+    case clearNotificationIndicator(Worktree)
+    case setSelectedWorktreeID(Worktree.ID?)
+  }
+
+  enum Event: Equatable {
+    case notificationReceived(worktreeID: Worktree.ID, title: String, body: String)
+    case tabCreated(worktreeID: Worktree.ID)
+    case tabClosed(worktreeID: Worktree.ID)
+    case focusChanged(worktreeID: Worktree.ID, surfaceID: UUID)
+    case taskStatusChanged(worktreeID: Worktree.ID, status: WorktreeTaskStatus)
+  }
 }
 
 extension TerminalClient: DependencyKey {
   static let liveValue = TerminalClient(
-    createTab: { _ in fatalError("TerminalClient.createTab not configured") },
-    closeFocusedTab: { _ in
-      fatalError("TerminalClient.closeFocusedTab not configured")
-    },
-    closeFocusedSurface: { _ in
-      fatalError("TerminalClient.closeFocusedSurface not configured")
-    },
-    prune: { _ in
-      fatalError("TerminalClient.prune not configured")
-    },
-    setNotificationsEnabled: { _ in
-      fatalError("TerminalClient.setNotificationsEnabled not configured")
-    },
-    clearNotificationIndicator: { _ in
-      fatalError("TerminalClient.clearNotificationIndicator not configured")
-    }
+    send: { _ in fatalError("TerminalClient.send not configured") },
+    events: { fatalError("TerminalClient.events not configured") }
   )
 
   static let testValue = TerminalClient(
-    createTab: { _ in },
-    closeFocusedTab: { _ in false },
-    closeFocusedSurface: { _ in false },
-    prune: { _ in },
-    setNotificationsEnabled: { _ in },
-    clearNotificationIndicator: { _ in }
+    send: { _ in },
+    events: { AsyncStream { $0.finish() } }
   )
 }
 

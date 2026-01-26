@@ -15,9 +15,16 @@ final class WorktreeTerminalState {
   private var focusedSurfaceIdByTab: [TerminalTabID: UUID] = [:]
   private var tabIsRunningById: [TerminalTabID: Bool] = [:]
   private var pendingSetupScript: Bool
+  private var lastReportedTaskStatus: WorktreeTaskStatus?
   var notifications: [WorktreeTerminalNotification] = []
   var notificationsEnabled = true
   var hasUnseenNotification = false
+  var isSelected: () -> Bool = { false }
+  var onNotificationReceived: ((String, String) -> Void)?
+  var onTabCreated: (() -> Void)?
+  var onTabClosed: (() -> Void)?
+  var onFocusChanged: ((UUID) -> Void)?
+  var onTaskStatusChanged: ((WorktreeTaskStatus) -> Void)?
 
   init(runtime: GhosttyRuntime, worktree: Worktree, runSetupScript: Bool = false) {
     self.runtime = runtime
@@ -53,6 +60,7 @@ final class WorktreeTerminalState {
     if let surface = tree.root?.leftmostLeaf() {
       focusSurface(surface, in: tabId)
     }
+    onTabCreated?()
     return tabId
   }
 
@@ -103,6 +111,7 @@ final class WorktreeTerminalState {
     if let selected = tabManager.selectedTabId {
       focusSurface(in: selected)
     }
+    onTabClosed?()
   }
 
   func closeOtherTabs(keeping tabId: TerminalTabID) {
@@ -356,6 +365,7 @@ final class WorktreeTerminalState {
     focusedSurfaceIdByTab[tabId] = surface.id
     surface.requestFocus()
     updateTabTitle(for: tabId)
+    onFocusChanged?(surface.id)
   }
 
   private func appendNotification(title: String, body: String, surfaceId: UUID) {
@@ -368,7 +378,10 @@ final class WorktreeTerminalState {
       title: trimmedTitle,
       body: trimmedBody
     ))
-    hasUnseenNotification = true
+    if !isSelected() {
+      hasUnseenNotification = true
+    }
+    onNotificationReceived?(trimmedTitle, trimmedBody)
   }
 
   private func removeTree(for tabId: TerminalTabID) {
@@ -395,6 +408,11 @@ final class WorktreeTerminalState {
     }
     tabIsRunningById[tabId] = isRunningNow
     tabManager.updateDirty(tabId, isDirty: isRunningNow)
+    let newStatus = focusedTaskStatus
+    if newStatus != lastReportedTaskStatus {
+      lastReportedTaskStatus = newStatus
+      onTaskStatusChanged?(newStatus)
+    }
   }
 
   private func isRunningProgressState(_ state: ghostty_action_progress_report_state_e?) -> Bool {

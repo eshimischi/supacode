@@ -65,23 +65,11 @@ struct SupacodeApp: App {
         AppFeature()
       } withDependencies: { values in
         values.terminalClient = TerminalClient(
-          createTab: { worktree in
-            terminalManager.createTab(in: worktree)
+          send: { command in
+            terminalManager.handleCommand(command)
           },
-          closeFocusedTab: { worktree in
-            terminalManager.closeFocusedTab(in: worktree)
-          },
-          closeFocusedSurface: { worktree in
-            terminalManager.closeFocusedSurface(in: worktree)
-          },
-          prune: { ids in
-            terminalManager.prune(keeping: ids)
-          },
-          setNotificationsEnabled: { enabled in
-            terminalManager.setNotificationsEnabled(enabled)
-          },
-          clearNotificationIndicator: { worktree in
-            terminalManager.clearNotificationIndicator(for: worktree)
+          events: {
+            terminalManager.eventStream()
           }
         )
       }

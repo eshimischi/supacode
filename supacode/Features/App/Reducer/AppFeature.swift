@@ -36,6 +36,7 @@ struct AppFeature {
     case closeTab
     case closeSurface
     case alert(PresentationAction<Alert>)
+    case terminalEvent(TerminalClient.Event)
   }
 
   enum Alert: Equatable {
@@ -53,7 +54,12 @@ struct AppFeature {
         return .merge(
           .send(.repositories(.task)),
           .send(.settings(.task)),
-          .send(.worktreeInfo(.task))
+          .send(.worktreeInfo(.task)),
+          .run { send in
+            for await event in await terminalClient.events() {
+              await send(.terminalEvent(event))
+            }
+          }
         )
 
       case .scenePhaseChanged(let phase):
@@ -70,21 +76,27 @@ struct AppFeature {
       case .repositories(.delegate(.selectedWorktreeChanged(let worktree))):
         guard let worktree else {
           state.openActionSelection = .finder
-          return .send(.worktreeInfo(.worktreeChanged(nil)))
+          return .merge(
+            .send(.worktreeInfo(.worktreeChanged(nil))),
+            .run { _ in
+              await terminalClient.send(.setSelectedWorktreeID(nil))
+            }
+          )
         }
         let settings = repositorySettingsClient.load(worktree.repositoryRootURL)
         state.openActionSelection = OpenWorktreeAction.fromSettingsID(settings.openActionID)
         return .merge(
           .send(.worktreeInfo(.worktreeChanged(worktree))),
           .run { _ in
-            await terminalClient.clearNotificationIndicator(worktree)
+            await terminalClient.send(.setSelectedWorktreeID(worktree.id))
+            await terminalClient.send(.clearNotificationIndicator(worktree))
           }
         )
 
       case .repositories(.delegate(.repositoriesChanged(let repositories))):
         let ids = Set(repositories.flatMap { $0.worktrees.map(\.id) })
         return .run { _ in
-          await terminalClient.prune(ids)
+          await terminalClient.send(.prune(ids))
         }
 
       case .settings(.delegate(.settingsChanged(let settings))):
@@ -98,7 +110,7 @@ struct AppFeature {
             )
           ),
           .run { _ in
-            await terminalClient.setNotificationsEnabled(settings.inAppNotificationsEnabled)
+            await terminalClient.send(.setNotificationsEnabled(settings.inAppNotificationsEnabled))
           }
         )
 
@@ -142,7 +154,7 @@ struct AppFeature {
           return .none
         }
         return .run { _ in
-          await terminalClient.createTab(worktree)
+          await terminalClient.send(.createTab(worktree))
         }
 
       case .closeTab:
@@ -150,7 +162,7 @@ struct AppFeature {
           return .none
         }
         return .run { _ in
-          _ = await terminalClient.closeFocusedTab(worktree)
+          await terminalClient.send(.closeFocusedTab(worktree))
         }
 
       case .closeSurface:
@@ -158,7 +170,7 @@ struct AppFeature {
           return .none
         }
         return .run { _ in
-          _ = await terminalClient.closeFocusedSurface(worktree)
+          await terminalClient.send(.closeFocusedSurface(worktree))
         }
 
       case .alert(.dismiss):
@@ -178,6 +190,9 @@ struct AppFeature {
         return .none
 
       case .updates:
+        return .none
+
+      case .terminalEvent:
         return .none
       }
     }
