@@ -362,7 +362,7 @@ extension NSPasteboard.PasteboardType {
 extension NSPasteboard {
   private static let ghosttyEscapeCharacters = "\\ ()[]{}<>\"'`!#$&;|*?\t"
 
-  private static func ghosttyEscape(_ str: String) -> String {
+  static func ghosttyEscape(_ str: String) -> String {
     var result = str
     for char in ghosttyEscapeCharacters {
       result = result.replacing(String(char), with: "\\\(char)")
