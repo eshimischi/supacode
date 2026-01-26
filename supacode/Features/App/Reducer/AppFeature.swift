@@ -1,5 +1,6 @@
 import AppKit
 import ComposableArchitecture
+import Sentry
 import SwiftUI
 
 private let notificationSound: NSSound? = {
@@ -234,7 +235,9 @@ private struct ActionLabelReducer<Base: Reducer>: Reducer {
   let base: Base
 
   func reduce(into state: inout Base.State, action: Base.Action) -> Effect<Base.Action> {
-    print("received action: \(debugCaseOutput(action))")
+    let actionLabel = debugCaseOutput(action)
+    print("received action: \(actionLabel)")
+    SentrySDK.logger.info("received action: \(actionLabel)")
     return base.reduce(into: &state, action: action)
   }
 }
