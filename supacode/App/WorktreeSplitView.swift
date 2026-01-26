@@ -10,8 +10,11 @@ struct WorktreeSplitView: View {
     if isInfoVisible {
       HSplitView {
         WorktreeDetailView(store: store, terminalManager: terminalManager)
-        WorktreeInfoView(store: store.scope(state: \.worktreeInfo, action: \.worktreeInfo))
-          .frame(minWidth: 260, idealWidth: 320, maxWidth: 400)
+        WorktreeInfoView(
+          store: store.scope(state: \.worktreeInfo, action: \.worktreeInfo),
+          terminalManager: terminalManager
+        )
+        .frame(minWidth: 260, idealWidth: 320, maxWidth: 400)
       }
     } else {
       WorktreeDetailView(store: store, terminalManager: terminalManager)

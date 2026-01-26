@@ -34,16 +34,12 @@ struct WorktreeDetailView: View {
         WorktreeLoadingView(info: loadingInfo)
       } else if let selectedWorktree {
         let shouldRunSetupScript = repositories.pendingSetupScriptWorktreeIDs.contains(selectedWorktree.id)
-        let terminalState = terminalManager.state(for: selectedWorktree) { shouldRunSetupScript }
-        VStack(spacing: 0) {
-          WorktreeNotificationsListView(state: terminalState)
-          WorktreeTerminalTabsView(
-            worktree: selectedWorktree,
-            manager: terminalManager,
-            shouldRunSetupScript: shouldRunSetupScript,
-            createTab: { store.send(.newTerminal) }
-          )
-        }
+        WorktreeTerminalTabsView(
+          worktree: selectedWorktree,
+          manager: terminalManager,
+          shouldRunSetupScript: shouldRunSetupScript,
+          createTab: { store.send(.newTerminal) }
+        )
         .id(selectedWorktree.id)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
