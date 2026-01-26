@@ -25,6 +25,7 @@ AppFeature (root TCA store)
 └─ UpdatesFeature (Sparkle auto-updates)
 
 WorktreeTerminalManager (global @Observable terminal state)
+├─ selectedWorktreeID (tracks current selection for bell logic)
 └─ WorktreeTerminalState (per worktree)
     └─ TerminalTabManager (tab/split management)
         └─ GhosttySurfaceState[] (one per terminal surface)
@@ -65,6 +66,20 @@ supacode/
 - **GhosttyKit**: Terminal emulator (built from Zig source in ThirdParty/ghostty)
 - **Sparkle**: Auto-update framework
 - **swift-dependencies**: Dependency injection for TCA clients
+
+### TCA ↔ Terminal Communication
+
+The terminal layer (`WorktreeTerminalManager`) is `@Observable` but outside TCA. Communication uses `TerminalClient`:
+
+```
+Reducer → terminalClient.send(Command) → WorktreeTerminalManager
+                                                    ↓
+Reducer ← .terminalEvent(Event) ← AsyncStream<Event>
+```
+
+- **Commands**: `createTab`, `closeFocusedTab`, `prune`, `setSelectedWorktreeID`, etc.
+- **Events**: `notificationReceived`, `tabCreated`, `tabClosed`, `focusChanged`, `taskStatusChanged`
+- Wired in `supacodeApp.swift`, subscribed in `AppFeature.task`
 
 ## Ghostty Keybindings Handling
 

@@ -6,9 +6,37 @@ final class WorktreeTerminalManager {
   private let runtime: GhosttyRuntime
   private var states: [Worktree.ID: WorktreeTerminalState] = [:]
   private var notificationsEnabled = true
+  private var eventContinuation: AsyncStream<TerminalClient.Event>.Continuation?
+  var selectedWorktreeID: Worktree.ID?
 
   init(runtime: GhosttyRuntime) {
     self.runtime = runtime
+  }
+
+  func handleCommand(_ command: TerminalClient.Command) {
+    switch command {
+    case .createTab(let worktree):
+      createTab(in: worktree)
+    case .closeFocusedTab(let worktree):
+      _ = closeFocusedTab(in: worktree)
+    case .closeFocusedSurface(let worktree):
+      _ = closeFocusedSurface(in: worktree)
+    case .prune(let ids):
+      prune(keeping: ids)
+    case .setNotificationsEnabled(let enabled):
+      setNotificationsEnabled(enabled)
+    case .clearNotificationIndicator(let worktree):
+      clearNotificationIndicator(for: worktree)
+    case .setSelectedWorktreeID(let id):
+      selectedWorktreeID = id
+    }
+  }
+
+  func eventStream() -> AsyncStream<TerminalClient.Event> {
+    eventContinuation?.finish()
+    let (stream, continuation) = AsyncStream.makeStream(of: TerminalClient.Event.self)
+    eventContinuation = continuation
+    return stream
   }
 
   func state(
@@ -25,6 +53,24 @@ final class WorktreeTerminalManager {
       runSetupScript: runSetupScript
     )
     state.setNotificationsEnabled(notificationsEnabled)
+    state.isSelected = { [weak self] in
+      self?.selectedWorktreeID == worktree.id
+    }
+    state.onNotificationReceived = { [weak self] title, body in
+      self?.emit(.notificationReceived(worktreeID: worktree.id, title: title, body: body))
+    }
+    state.onTabCreated = { [weak self] in
+      self?.emit(.tabCreated(worktreeID: worktree.id))
+    }
+    state.onTabClosed = { [weak self] in
+      self?.emit(.tabClosed(worktreeID: worktree.id))
+    }
+    state.onFocusChanged = { [weak self] surfaceID in
+      self?.emit(.focusChanged(worktreeID: worktree.id, surfaceID: surfaceID))
+    }
+    state.onTaskStatusChanged = { [weak self] status in
+      self?.emit(.taskStatusChanged(worktreeID: worktree.id, status: status))
+    }
     states[worktree.id] = state
     return state
   }
@@ -78,5 +124,9 @@ final class WorktreeTerminalManager {
 
   func clearNotificationIndicator(for worktree: Worktree) {
     states[worktree.id]?.clearNotificationIndicator()
+  }
+
+  private func emit(_ event: TerminalClient.Event) {
+    eventContinuation?.yield(event)
   }
 }
