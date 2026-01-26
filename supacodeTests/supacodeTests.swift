@@ -16,15 +16,20 @@ struct SupacodeTests {
   }
 
   @Test func worktreeNameGeneratorReturnsRemainingName() {
+    let adjectives = WorktreeNameGenerator.adjectives
     let animals = WorktreeNameGenerator.animals
-    let expected = animals.last
-    let excluded = Set(animals.dropLast())
+    let allNames = adjectives.flatMap { adj in animals.map { "\(adj)-\($0)" } }
+    let expected = allNames.last!
+    let excluded = Set(allNames.dropLast())
     let name = WorktreeNameGenerator.nextName(excluding: excluded)
     #expect(name == expected)
   }
 
   @Test func worktreeNameGeneratorReturnsNilWhenExhausted() {
-    let excluded = Set(WorktreeNameGenerator.animals)
+    let adjectives = WorktreeNameGenerator.adjectives
+    let animals = WorktreeNameGenerator.animals
+    let allNames = adjectives.flatMap { adj in animals.map { "\(adj)-\($0)" } }
+    let excluded = Set(allNames)
     let name = WorktreeNameGenerator.nextName(excluding: excluded)
     #expect(name == nil)
   }
