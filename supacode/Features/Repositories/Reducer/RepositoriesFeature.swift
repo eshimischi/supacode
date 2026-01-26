@@ -273,7 +273,7 @@ struct RepositoriesFeature {
             }
             guard let name else {
               let message =
-                "All default animal names are already in use. "
+                "All default adjective-animal names are already in use. "
                 + "Delete a worktree or rename a branch, then try again."
               await send(
                 .createRandomWorktreeFailed(

@@ -1,6 +1,37 @@
 import Foundation
 
 enum WorktreeNameGenerator {
+  static let adjectives: [String] = [
+    "bold",
+    "bright",
+    "brisk",
+    "calm",
+    "clever",
+    "curious",
+    "daring",
+    "eager",
+    "gentle",
+    "happy",
+    "jolly",
+    "keen",
+    "lively",
+    "mighty",
+    "nimble",
+    "noble",
+    "playful",
+    "proud",
+    "quick",
+    "quiet",
+    "rapid",
+    "shy",
+    "smart",
+    "steady",
+    "sunny",
+    "swift",
+    "witty",
+    "zesty",
+  ]
+
   static let animals: [String] = [
     "cat",
     "dog",
@@ -59,7 +90,9 @@ enum WorktreeNameGenerator {
 
   static func nextName(excluding existing: Set<String>) -> String? {
     let normalized = Set(existing.map { $0.lowercased() })
-    let available = animals.filter { !normalized.contains($0) }
+    let available = adjectives.flatMap { adjective in
+      animals.map { "\(adjective)-\($0)" }
+    }.filter { !normalized.contains($0) }
     return available.randomElement()
   }
 }
