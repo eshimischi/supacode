@@ -38,6 +38,7 @@ struct WorktreeRow: View {
       }
       VStack(alignment: .leading, spacing: 2) {
         Text(name)
+          .monospaced()
         if let description {
           Text(description)
             .font(.caption)
