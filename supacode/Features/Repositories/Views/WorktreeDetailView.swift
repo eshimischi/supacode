@@ -16,29 +16,31 @@ struct WorktreeDetailView: View {
     let selectedRow = repositories.selectedRow(for: repositories.selectedWorktreeID)
     let selectedWorktree = repositories.worktree(for: repositories.selectedWorktreeID)
     let loadingInfo = loadingInfo(for: selectedRow, repositories: repositories)
-    let isOpenDisabled = selectedWorktree == nil || loadingInfo != nil
+    let hasActiveWorktree = selectedWorktree != nil && loadingInfo == nil
     let openActionSelection = state.openActionSelection
-    let openSelectedWorktreeAction: (() -> Void)? = isOpenDisabled
-      ? nil
-      : { store.send(.openSelectedWorktree) }
-    let newTerminalAction: (() -> Void)? = isOpenDisabled
-      ? nil
-      : { store.send(.newTerminal) }
-    let closeTabAction: (() -> Void)? = isOpenDisabled
-      ? nil
-      : { store.send(.closeTab) }
-    let closeSurfaceAction: (() -> Void)? = isOpenDisabled
-      ? nil
-      : { store.send(.closeSurface) }
+    let openSelectedWorktreeAction: (() -> Void)? = hasActiveWorktree
+      ? { store.send(.openSelectedWorktree) }
+      : nil
+    let newTerminalAction: (() -> Void)? = hasActiveWorktree
+      ? { store.send(.newTerminal) }
+      : nil
+    let closeTabAction: (() -> Void)? = hasActiveWorktree
+      ? { store.send(.closeTab) }
+      : nil
+    let closeSurfaceAction: (() -> Void)? = hasActiveWorktree
+      ? { store.send(.closeSurface) }
+      : nil
     Group {
       if let loadingInfo {
         WorktreeLoadingView(info: loadingInfo)
       } else if let selectedWorktree {
         let shouldRunSetupScript = repositories.pendingSetupScriptWorktreeIDs.contains(selectedWorktree.id)
+        let shouldFocusTerminal = repositories.shouldFocusTerminal(for: selectedWorktree.id)
         WorktreeTerminalTabsView(
           worktree: selectedWorktree,
           manager: terminalManager,
           shouldRunSetupScript: shouldRunSetupScript,
+          forceAutoFocus: shouldFocusTerminal,
           createTab: { store.send(.newTerminal) }
         )
         .id(selectedWorktree.id)
@@ -47,6 +49,9 @@ struct WorktreeDetailView: View {
           if shouldRunSetupScript {
             store.send(.repositories(.consumeSetupScript(selectedWorktree.id)))
           }
+          if shouldFocusTerminal {
+            store.send(.repositories(.consumeTerminalFocus(selectedWorktree.id)))
+          }
         }
       } else {
         EmptyStateView(store: store.scope(state: \.repositories, action: \.repositories))
@@ -54,11 +59,13 @@ struct WorktreeDetailView: View {
     }
     .navigationTitle(selectedWorktree?.name ?? loadingInfo?.name ?? "Supacode")
     .toolbar {
-      openToolbar(
-        isOpenDisabled: isOpenDisabled,
-        openActionSelection: openActionSelection,
-        showExtras: commandKeyObserver.isPressed
-      )
+      if hasActiveWorktree, let selectedWorktree {
+        worktreeToolbar(
+          branchName: selectedWorktree.name,
+          openActionSelection: openActionSelection,
+          showExtras: commandKeyObserver.isPressed
+        )
+      }
     }
     .focusedSceneValue(\.newTerminalAction, newTerminalAction)
     .focusedSceneValue(\.closeTabAction, closeTabAction)
@@ -90,39 +97,61 @@ struct WorktreeDetailView: View {
   }
 
   @ToolbarContentBuilder
-  private func openToolbar(
-    isOpenDisabled: Bool,
+  private func worktreeToolbar(
+    branchName: String,
     openActionSelection: OpenWorktreeAction,
     showExtras: Bool
   ) -> some ToolbarContent {
-    if !isOpenDisabled {
-      ToolbarItemGroup(placement: .primaryAction) {
-        openMenu(openActionSelection: openActionSelection, showExtras: showExtras)
-      }
+    ToolbarItem(placement: .principal) {
+        XcodeStyleStatusView()
     }
+      
+      #if DEBUG
+      ToolbarItem(placement: .automatic) {
+          openMenu(openActionSelection: openActionSelection, showExtras: showExtras)
+
+      }
+      
+      ToolbarItem(placement: .primaryAction) {
+          Button("PR Button") { }.padding(.horizontal)
+      }
+      
+      
+      ToolbarItem(placement: .secondaryAction) {
+          Button("secpond") { }.padding(.horizontal)
+      }
+      
+      ToolbarItem(placement: .status) {
+          Button("status") { }.padding(.horizontal)
+      }
+      #endif
+
+      
   }
 
   @ViewBuilder
   private func openMenu(openActionSelection: OpenWorktreeAction, showExtras: Bool) -> some View {
+    let availableActions = OpenWorktreeAction.availableCases
+    let resolvedOpenActionSelection = OpenWorktreeAction.availableSelection(openActionSelection)
     HStack(spacing: 0) {
       Button {
-        store.send(.openWorktree(openActionSelection))
+        store.send(.openWorktree(resolvedOpenActionSelection))
       } label: {
         OpenWorktreeActionMenuLabelView(
-          action: openActionSelection,
+          action: resolvedOpenActionSelection,
           shortcutHint: showExtras ? AppShortcuts.openFinder.display : nil
         )
       }
       .buttonStyle(.borderless)
       .padding(8)
-      .help(openActionHelpText(for: openActionSelection, isDefault: true))
+      .help(openActionHelpText(for: resolvedOpenActionSelection, isDefault: true))
 
       Divider()
         .frame(height: 16)
 
       Menu {
-        ForEach(OpenWorktreeAction.allCases) { action in
-          let isDefault = action == openActionSelection
+        ForEach(availableActions) { action in
+          let isDefault = action == resolvedOpenActionSelection
           Button {
             store.send(.openActionSelectionChanged(action))
             store.send(.openWorktree(action))
