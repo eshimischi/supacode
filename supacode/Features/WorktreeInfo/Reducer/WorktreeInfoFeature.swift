@@ -17,6 +17,7 @@ struct WorktreeInfoFeature {
   enum Action: Equatable {
     case task
     case worktreeChanged(Worktree?, cachedPullRequest: GithubPullRequest?)
+    case cachedPullRequestUpdated(Worktree.ID, GithubPullRequest?)
     case refresh
     case refreshFinished(Result<WorktreeInfoSnapshot, WorktreeInfoError>)
     case timerTick
@@ -43,7 +44,10 @@ struct WorktreeInfoFeature {
                 pullRequest: cachedPullRequest
               )
             } else {
-              state.snapshot = cachedSnapshot
+              state.snapshot = snapshotByReplacingPullRequest(
+                snapshot: cachedSnapshot,
+                pullRequest: nil
+              )
             }
           } else if let cachedPullRequest {
             state.snapshot = snapshotFromCachedPullRequest(
@@ -71,6 +75,32 @@ struct WorktreeInfoFeature {
           timerEffect(),
           .send(.refresh)
         )
+
+      case .cachedPullRequestUpdated(let worktreeID, let pullRequest):
+        if let cachedSnapshot = state.cachedSnapshots[worktreeID] {
+          state.cachedSnapshots[worktreeID] = snapshotByReplacingPullRequest(
+            snapshot: cachedSnapshot,
+            pullRequest: pullRequest
+          )
+        }
+        guard state.worktree?.id == worktreeID else { return .none }
+        state.cachedPullRequest = pullRequest
+        if let snapshot = state.snapshot {
+          let updatedSnapshot = snapshotByReplacingPullRequest(
+            snapshot: snapshot,
+            pullRequest: pullRequest
+          )
+          state.snapshot = updatedSnapshot
+          state.cachedSnapshots[worktreeID] = updatedSnapshot
+        } else if let worktree = state.worktree, let pullRequest {
+          let updatedSnapshot = snapshotFromCachedPullRequest(
+            worktree: worktree,
+            pullRequest: pullRequest
+          )
+          state.snapshot = updatedSnapshot
+          state.cachedSnapshots[worktreeID] = updatedSnapshot
+        }
+        return .none
 
       case .refresh:
         guard let worktree = state.worktree else { return .none }
@@ -259,7 +289,7 @@ nonisolated private func snapshotFromCachedPullRequest(
 
 nonisolated private func snapshotByReplacingPullRequest(
   snapshot: WorktreeInfoSnapshot,
-  pullRequest: GithubPullRequest
+  pullRequest: GithubPullRequest?
 ) -> WorktreeInfoSnapshot {
   let pullRequestInfo = pullRequestDetails(pullRequest)
 

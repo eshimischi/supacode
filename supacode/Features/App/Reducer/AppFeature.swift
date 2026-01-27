@@ -150,6 +150,9 @@ struct AppFeature {
           }
         )
 
+      case .repositories(.worktreePullRequestLoaded(let worktreeID, let pullRequest)):
+        return .send(.worktreeInfo(.cachedPullRequestUpdated(worktreeID, pullRequest)))
+
       case .settings(.delegate(.settingsChanged(let settings))):
         return .merge(
           .send(

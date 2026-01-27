@@ -64,13 +64,6 @@ struct PullRequestStatusModel: Equatable {
     self.url = url
   }
 
-  static func shouldDisplay(pullRequest: GithubPullRequest?) -> Bool {
-    guard let pullRequest else {
-      return false
-    }
-    return shouldDisplay(state: pullRequest.state, number: pullRequest.number)
-  }
-
   static func shouldDisplay(state: String?, number: Int?) -> Bool {
     guard number != nil else {
       return false
