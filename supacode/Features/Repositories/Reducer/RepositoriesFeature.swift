@@ -61,6 +61,8 @@ struct RepositoriesFeature {
     case pinWorktree(Worktree.ID)
     case unpinWorktree(Worktree.ID)
     case presentAlert(title: String, message: String)
+    case worktreeInfoEvent(WorktreeInfoWatcherClient.Event)
+    case worktreeBranchNameLoaded(worktreeID: Worktree.ID, name: String)
     case alert(PresentationAction<Alert>)
     case delegate(Delegate)
   }
@@ -456,6 +458,25 @@ struct RepositoriesFeature {
         state.alert = errorAlert(title: title, message: message)
         return .none
 
+      case .worktreeInfoEvent(let event):
+        switch event {
+        case .branchChanged(let worktreeID):
+          guard let worktree = state.worktree(for: worktreeID) else {
+            return .none
+          }
+          let worktreeURL = worktree.workingDirectory
+          let gitClient = gitClient
+          return .run { send in
+            if let name = await gitClient.branchName(worktreeURL) {
+              await send(.worktreeBranchNameLoaded(worktreeID: worktreeID, name: name))
+            }
+          }
+        }
+
+      case .worktreeBranchNameLoaded(let worktreeID, let name):
+        updateWorktreeName(worktreeID, name: name, state: &state)
+        return .none
+
       case .alert(.dismiss):
         state.alert = nil
         return .none
@@ -801,6 +822,39 @@ private func insertWorktree(
     name: repository.name,
     worktrees: worktrees
   )
+}
+
+private func updateWorktreeName(
+  _ worktreeID: Worktree.ID,
+  name: String,
+  state: inout RepositoriesFeature.State
+) {
+  for index in state.repositories.indices {
+    var repository = state.repositories[index]
+    guard let worktreeIndex = repository.worktrees.firstIndex(where: { $0.id == worktreeID }) else {
+      continue
+    }
+    let worktree = repository.worktrees[worktreeIndex]
+    guard worktree.name != name else {
+      return
+    }
+    var worktrees = repository.worktrees
+    worktrees[worktreeIndex] = Worktree(
+      id: worktree.id,
+      name: name,
+      detail: worktree.detail,
+      workingDirectory: worktree.workingDirectory,
+      repositoryRootURL: worktree.repositoryRootURL
+    )
+    repository = Repository(
+      id: repository.id,
+      rootURL: repository.rootURL,
+      name: repository.name,
+      worktrees: worktrees
+    )
+    state.repositories[index] = repository
+    return
+  }
 }
 
 private func restoreSelection(

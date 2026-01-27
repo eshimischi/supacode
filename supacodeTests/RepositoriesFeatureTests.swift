@@ -67,6 +67,43 @@ struct RepositoriesFeatureTests {
     }
   }
 
+  @Test func branchChangeUpdatesWorktreeName() async {
+    let worktreeA = makeWorktree(id: "/tmp/wt-a", name: "main")
+    let worktreeB = makeWorktree(id: "/tmp/wt-b", name: "feature")
+    let repository = makeRepository(id: "/tmp/repo", worktrees: [worktreeA, worktreeB])
+    let store = TestStore(initialState: RepositoriesFeature.State(repositories: [repository])) {
+      RepositoriesFeature()
+    } withDependencies: {
+      $0.gitClient.branchName = { url in
+        if url == worktreeA.workingDirectory {
+          return "renamed"
+        }
+        return nil
+      }
+    }
+
+    let updatedRepository = Repository(
+      id: repository.id,
+      rootURL: repository.rootURL,
+      name: repository.name,
+      worktrees: [
+        Worktree(
+          id: worktreeA.id,
+          name: "renamed",
+          detail: worktreeA.detail,
+          workingDirectory: worktreeA.workingDirectory,
+          repositoryRootURL: worktreeA.repositoryRootURL
+        ),
+        worktreeB,
+      ]
+    )
+
+    await store.send(.worktreeInfoEvent(.branchChanged(worktreeID: worktreeA.id)))
+    await store.receive(.worktreeBranchNameLoaded(worktreeID: worktreeA.id, name: "renamed")) {
+      $0.repositories = [updatedRepository]
+    }
+  }
+
   @Test func orderedWorktreeRowsAreGlobal() {
     let repoA = makeRepository(
       id: "/tmp/repo-a",

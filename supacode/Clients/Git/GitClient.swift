@@ -136,6 +136,32 @@ struct GitClient {
     }
   }
 
+  nonisolated func branchName(for worktreeURL: URL) async -> String? {
+    let headURL = await MainActor.run {
+      GitWorktreeHeadResolver.headURL(for: worktreeURL, fileManager: .default)
+    }
+    guard let headURL else {
+      return nil
+    }
+    guard let contents = try? String(contentsOf: headURL, encoding: .utf8) else {
+      return nil
+    }
+    guard let line = contents.split(whereSeparator: \.isNewline).first else {
+      return nil
+    }
+    let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+    let refPrefix = "ref:"
+    if trimmed.hasPrefix(refPrefix) {
+      let ref = trimmed.dropFirst(refPrefix.count).trimmingCharacters(in: .whitespaces)
+      let headsPrefix = "refs/heads/"
+      if ref.hasPrefix(headsPrefix) {
+        return String(ref.dropFirst(headsPrefix.count))
+      }
+      return String(ref)
+    }
+    return "HEAD"
+  }
+
   nonisolated func removeWorktree(_ worktree: Worktree) async throws -> URL {
     if !worktree.name.isEmpty {
       let wtURL = try wtScriptURL()
