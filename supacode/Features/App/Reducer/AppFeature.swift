@@ -134,7 +134,7 @@ struct AppFeature {
         return .none
 
       case .openSelectedWorktree:
-        return .send(.openWorktree(state.openActionSelection))
+        return .send(.openWorktree(OpenWorktreeAction.availableSelection(state.openActionSelection)))
 
       case .openWorktree(let action):
         guard let worktree = state.repositories.worktree(for: state.repositories.selectedWorktreeID) else {

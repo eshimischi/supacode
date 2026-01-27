@@ -109,25 +109,27 @@ struct WorktreeDetailView: View {
 
   @ViewBuilder
   private func openMenu(openActionSelection: OpenWorktreeAction, showExtras: Bool) -> some View {
+    let availableActions = OpenWorktreeAction.availableCases
+    let resolvedOpenActionSelection = OpenWorktreeAction.availableSelection(openActionSelection)
     HStack(spacing: 0) {
       Button {
-        store.send(.openWorktree(openActionSelection))
+        store.send(.openWorktree(resolvedOpenActionSelection))
       } label: {
         OpenWorktreeActionMenuLabelView(
-          action: openActionSelection,
+          action: resolvedOpenActionSelection,
           shortcutHint: showExtras ? AppShortcuts.openFinder.display : nil
         )
       }
       .buttonStyle(.borderless)
       .padding(8)
-      .help(openActionHelpText(for: openActionSelection, isDefault: true))
+      .help(openActionHelpText(for: resolvedOpenActionSelection, isDefault: true))
 
       Divider()
         .frame(height: 16)
 
       Menu {
-        ForEach(OpenWorktreeAction.allCases) { action in
-          let isDefault = action == openActionSelection
+        ForEach(availableActions) { action in
+          let isDefault = action == resolvedOpenActionSelection
           Button {
             store.send(.openActionSelectionChanged(action))
             store.send(.openWorktree(action))
