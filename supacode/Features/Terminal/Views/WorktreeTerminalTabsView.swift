@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct WorktreeTerminalTabsView: View {
@@ -36,11 +37,20 @@ struct WorktreeTerminalTabsView: View {
       }
     }
     .onAppear {
-      state.ensureInitialTab()
-      state.focusSelectedTab()
+      state.ensureInitialTab(focusing: false)
+      if shouldAutoFocusTerminal {
+        state.focusSelectedTab()
+      }
     }
     .onChange(of: state.tabManager.selectedTabId) { _, _ in
-      state.focusSelectedTab()
+      if shouldAutoFocusTerminal {
+        state.focusSelectedTab()
+      }
     }
+  }
+
+  private var shouldAutoFocusTerminal: Bool {
+    guard let responder = NSApp.keyWindow?.firstResponder else { return true }
+    return !(responder is NSTableView) && !(responder is NSOutlineView)
   }
 }
