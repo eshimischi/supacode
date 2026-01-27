@@ -333,7 +333,6 @@ private struct RunScriptToolbarButton: View {
     .monospaced()
     .padding(.horizontal, 10)
     .padding(.vertical, 6)
-    .background(.quaternary.opacity(0.2), in: Capsule())
     .buttonStyle(.plain)
     .help(config.helpText)
     .disabled(!config.isEnabled)
@@ -432,28 +431,6 @@ private struct WorktreeToolbarPreview: View {
   }
 }
 
-#Preview("Toolbar - No PR") {
-  WorktreeToolbarPreview(
-    branchName: "feature/add-dark-mode",
-    prModel: nil,
-    openActionSelection: .cursor,
-    showExtras: false,
-    runScriptEnabled: true,
-    runScriptIsRunning: false
-  )
-}
-
-#Preview("Toolbar - With PR") {
-  WorktreeToolbarPreview(
-    branchName: "fix/login-issue",
-    prModel: PullRequestStatusModel(label: "PR #42 ↗ - 3/5 checks passed", url: nil),
-    openActionSelection: .finder,
-    showExtras: false,
-    runScriptEnabled: true,
-    runScriptIsRunning: false
-  )
-}
-
 #Preview("Toolbar - Running Script") {
   WorktreeToolbarPreview(
     branchName: "main",
@@ -462,16 +439,5 @@ private struct WorktreeToolbarPreview: View {
     showExtras: false,
     runScriptEnabled: true,
     runScriptIsRunning: true
-  )
-}
-
-#Preview("Toolbar - Show Extras") {
-  WorktreeToolbarPreview(
-    branchName: "feature/shortcuts",
-    prModel: nil,
-    openActionSelection: .xcode,
-    showExtras: true,
-    runScriptEnabled: false,
-    runScriptIsRunning: false
   )
 }
