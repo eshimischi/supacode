@@ -13,7 +13,8 @@ struct WorktreeRow: View {
   var body: some View {
     let showsSpinner = isLoading || taskStatus == .running
     let branchIconName = isMainWorktree ? "star.fill" : (isPinned ? "pin.fill" : "arrow.triangle.branch")
-    let hasInfo = info?.addedLines != nil || info?.removedLines != nil || info?.pullRequest != nil
+    let showsPullRequest = PullRequestStatusModel.shouldDisplay(pullRequest: info?.pullRequest)
+    let hasInfo = info?.addedLines != nil || info?.removedLines != nil || showsPullRequest
     HStack(alignment: .center) {
       ZStack {
         if showsNotificationIndicator {
@@ -67,6 +68,7 @@ private struct WorktreeRowInfoView: View {
   let info: WorktreeInfoEntry?
 
   var body: some View {
+    let showsPullRequest = PullRequestStatusModel.shouldDisplay(pullRequest: info?.pullRequest)
     HStack {
       if let info, let addedLines = info.addedLines, let removedLines = info.removedLines {
         HStack {
@@ -76,8 +78,8 @@ private struct WorktreeRowInfoView: View {
             .foregroundStyle(.red)
         }
       }
-      if let info, let pullRequestNumber = info.pullRequest?.number {
-        Text("PR: \(pullRequestNumber)")
+      if showsPullRequest, let info, let pullRequestNumber = info.pullRequest?.number {
+        Text(verbatim: "PR: \(pullRequestNumber)")
           .foregroundStyle(.secondary)
       }
     }
