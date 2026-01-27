@@ -28,10 +28,14 @@ struct SettingsStorageTests {
 
     var settings = storage.load()
     settings.global.appearanceMode = .dark
+    settings.repositoryRoots = ["/tmp/repo-a", "/tmp/repo-b"]
+    settings.pinnedWorktreeIDs = ["/tmp/repo-a/wt-1"]
     storage.save(settings)
 
     let reloaded = SettingsStorage(settingsURL: settingsURL).load()
     #expect(reloaded.global.appearanceMode == .dark)
+    #expect(reloaded.repositoryRoots == ["/tmp/repo-a", "/tmp/repo-b"])
+    #expect(reloaded.pinnedWorktreeIDs == ["/tmp/repo-a/wt-1"])
   }
 
   @Test func invalidJSONResetsToDefaults() throws {
@@ -76,6 +80,8 @@ struct SettingsStorageTests {
     #expect(settings.global.updatesAutomaticallyCheckForUpdates == false)
     #expect(settings.global.updatesAutomaticallyDownloadUpdates == true)
     #expect(settings.global.inAppNotificationsEnabled == true)
+    #expect(settings.repositoryRoots.isEmpty)
+    #expect(settings.pinnedWorktreeIDs.isEmpty)
   }
 
   private func makeTempDirectory() throws -> URL {

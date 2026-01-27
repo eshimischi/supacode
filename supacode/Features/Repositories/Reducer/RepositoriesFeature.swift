@@ -30,9 +30,14 @@ struct RepositoriesFeature {
     case loadPersistedRepositories
     case refreshWorktrees
     case reloadRepositories(animated: Bool)
-    case repositoriesLoaded([Repository], errors: [String], animated: Bool)
+    case repositoriesLoaded([Repository], failures: [LoadFailure], roots: [URL], animated: Bool)
     case openRepositories([URL])
-    case openRepositoriesFinished([Repository], errors: [String], failures: [String])
+    case openRepositoriesFinished(
+      [Repository],
+      failures: [LoadFailure],
+      invalidRoots: [String],
+      roots: [URL]
+    )
     case selectWorktree(Worktree.ID?)
     case requestRenameBranch(Worktree.ID, String)
     case createRandomWorktree
@@ -71,6 +76,11 @@ struct RepositoriesFeature {
     case worktreePullRequestLoaded(worktreeID: Worktree.ID, pullRequest: GithubPullRequest?)
     case alert(PresentationAction<Alert>)
     case delegate(Delegate)
+  }
+
+  struct LoadFailure: Equatable {
+    let rootID: Repository.ID
+    let message: String
   }
 
   enum Alert: Equatable {
@@ -113,9 +123,16 @@ struct RepositoriesFeature {
         guard !roots.isEmpty else { return .none }
         return loadRepositories(roots, animated: animated)
 
-      case .repositoriesLoaded(let repositories, let errors, let animated):
+      case .repositoriesLoaded(let repositories, let failures, let roots, let animated):
         let previousSelection = state.selectedWorktreeID
-        applyRepositories(repositories, state: &state, animated: animated)
+        let mergedRepositories = mergeRepositories(
+          roots: roots,
+          loaded: repositories,
+          failures: failures,
+          previous: state.repositories
+        )
+        applyRepositories(mergedRepositories, state: &state, animated: animated)
+        let errors = failures.map(\.message)
         if !errors.isEmpty {
           state.alert = errorAlert(
             title: errors.count == 1 ? "Failed to load repository" : "Failed to load repositories",
@@ -124,7 +141,9 @@ struct RepositoriesFeature {
         }
         let selectionChanged = previousSelection != state.selectedWorktreeID
         let selectedWorktree = state.worktree(for: state.selectedWorktreeID)
-        var allEffects: [Effect<Action>] = [.send(.delegate(.repositoriesChanged(repositories)))]
+        var allEffects: [Effect<Action>] = [
+          .send(.delegate(.repositoriesChanged(mergedRepositories)))
+        ]
         if selectionChanged {
           allEffects.append(.send(.delegate(.selectedWorktreeChanged(selectedWorktree))))
         }
@@ -137,13 +156,13 @@ struct RepositoriesFeature {
             uniqueRootPaths(repositoryPersistence.loadRoots())
           }
           var resolvedRoots: [URL] = []
-          var failures: [String] = []
+          var invalidRoots: [String] = []
           for url in urls {
             do {
               let root = try await gitClient.repoRoot(url)
               resolvedRoots.append(root)
             } catch {
-              failures.append(url.path(percentEncoded: false))
+              invalidRoots.append(url.path(percentEncoded: false))
             }
           }
           var mergedPaths = existingRootPaths
@@ -161,31 +180,47 @@ struct RepositoriesFeature {
           await MainActor.run {
             repositoryPersistence.saveRoots(persistedRoots)
           }
-          let (repositories, errors) = await loadRepositoriesData(mergedRoots)
+          let (repositories, failures) = await loadRepositoriesData(mergedRoots)
           await send(
-            .openRepositoriesFinished(repositories, errors: errors, failures: failures)
+            .openRepositoriesFinished(
+              repositories,
+              failures: failures,
+              invalidRoots: invalidRoots,
+              roots: mergedRoots
+            )
           )
         }
         .cancellable(id: CancelID.load, cancelInFlight: true)
 
-      case .openRepositoriesFinished(let repositories, let errors, let failures):
+      case .openRepositoriesFinished(let repositories, let failures, let invalidRoots, let roots):
         let previousSelection = state.selectedWorktreeID
-        applyRepositories(repositories, state: &state, animated: false)
-        if !failures.isEmpty {
-          let message = failures.map { "\($0) is not a Git repository." }.joined(separator: "\n")
+        let mergedRepositories = mergeRepositories(
+          roots: roots,
+          loaded: repositories,
+          failures: failures,
+          previous: state.repositories
+        )
+        applyRepositories(mergedRepositories, state: &state, animated: false)
+        if !invalidRoots.isEmpty {
+          let message = invalidRoots.map { "\($0) is not a Git repository." }.joined(separator: "\n")
           state.alert = errorAlert(
             title: "Some folders couldn't be opened",
             message: message
           )
-        } else if !errors.isEmpty {
+        } else {
+          let errors = failures.map(\.message)
+          if !errors.isEmpty {
           state.alert = errorAlert(
             title: errors.count == 1 ? "Failed to load repository" : "Failed to load repositories",
             message: errors.joined(separator: "\n")
           )
+          }
         }
         let selectionChanged = previousSelection != state.selectedWorktreeID
         let selectedWorktree = state.worktree(for: state.selectedWorktreeID)
-        var allEffects: [Effect<Action>] = [.send(.delegate(.repositoriesChanged(repositories)))]
+        var allEffects: [Effect<Action>] = [
+          .send(.delegate(.repositoriesChanged(mergedRepositories)))
+        ]
         if selectionChanged {
           allEffects.append(.send(.delegate(.selectedWorktreeChanged(selectedWorktree))))
         }
@@ -596,32 +631,41 @@ struct RepositoriesFeature {
   }
 
   private func loadRepositories(_ roots: [URL], animated: Bool = false) -> Effect<Action> {
-    .run { [animated] send in
-      let (repositories, errors) = await loadRepositoriesData(roots)
-      await send(.repositoriesLoaded(repositories, errors: errors, animated: animated))
+    .run { [animated, roots] send in
+      let (repositories, failures) = await loadRepositoriesData(roots)
+      await send(
+        .repositoriesLoaded(
+          repositories,
+          failures: failures,
+          roots: roots,
+          animated: animated
+        )
+      )
     }
     .cancellable(id: CancelID.load, cancelInFlight: true)
   }
 
-  private func loadRepositoriesData(_ roots: [URL]) async -> ([Repository], [String]) {
+  private func loadRepositoriesData(_ roots: [URL]) async -> ([Repository], [LoadFailure]) {
     var loaded: [Repository] = []
-    var errors: [String] = []
+    var failures: [LoadFailure] = []
     for root in roots {
+      let normalizedRoot = root.standardizedFileURL
+      let rootID = normalizedRoot.path(percentEncoded: false)
       do {
         let worktrees = try await gitClient.worktrees(root)
-        let name = repositoryName(from: root)
+        let name = repositoryName(from: normalizedRoot)
         let repository = Repository(
-          id: root.standardizedFileURL.path(percentEncoded: false),
-          rootURL: root.standardizedFileURL,
+          id: rootID,
+          rootURL: normalizedRoot,
           name: name,
           worktrees: worktrees
         )
         loaded.append(repository)
       } catch {
-        errors.append(error.localizedDescription)
+        failures.append(LoadFailure(rootID: rootID, message: error.localizedDescription))
       }
     }
-    return (loaded, errors)
+    return (loaded, failures)
   }
 
   private func applyRepositories(_ repositories: [Repository], state: inout State, animated: Bool) {
@@ -684,6 +728,38 @@ struct RepositoriesFeature {
       state.selectedWorktreeID = firstAvailableWorktreeID(from: repositories, state: state)
       state.shouldSelectFirstAfterReload = false
     }
+  }
+
+  private func mergeRepositories(
+    roots: [URL],
+    loaded: [Repository],
+    failures: [LoadFailure],
+    previous: [Repository]
+  ) -> [Repository] {
+    guard !roots.isEmpty else {
+      return loaded
+    }
+    let loadedByID = Dictionary(uniqueKeysWithValues: loaded.map { ($0.id, $0) })
+    let previousByID = Dictionary(uniqueKeysWithValues: previous.map { ($0.id, $0) })
+    let failedIDs = Set(failures.map(\.rootID))
+    var merged: [Repository] = []
+    merged.reserveCapacity(roots.count)
+    for root in roots {
+      let rootID = root.standardizedFileURL.path(percentEncoded: false)
+      if let repository = loadedByID[rootID] {
+        merged.append(repository)
+      } else if failedIDs.contains(rootID), let repository = previousByID[rootID] {
+        merged.append(repository)
+      }
+    }
+    if merged.isEmpty {
+      return loaded
+    }
+    let mergedIDs = Set(merged.map(\.id))
+    for repository in loaded where !mergedIDs.contains(repository.id) {
+      merged.append(repository)
+    }
+    return merged
   }
 
   private func errorAlert(title: String, message: String) -> AlertState<Alert> {
