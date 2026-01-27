@@ -169,13 +169,10 @@ struct WorktreeDetailView: View {
       )
     }
     ToolbarItem(placement: .principal) {
-      XcodeStyleStatusView()
-        .padding(.horizontal)
-    }
-    if let model = PullRequestStatusModel(snapshot: worktreeInfoSnapshot) {
-      ToolbarItem(placement: .status) {
+      if let model = PullRequestStatusModel(snapshot: worktreeInfoSnapshot) {
         PullRequestStatusButton(model: model)
-          .padding(.leading)
+      } else {
+        XcodeStyleStatusView()
       }
     }
     #if DEBUG
