@@ -166,7 +166,7 @@ struct WorktreeDetailView: View {
       )
     }
     ToolbarItem(placement: .principal) {
-      XcodeStyleStatusView()
+        XcodeStyleStatusView().padding(.horizontal)
     }
     #if DEBUG
     ToolbarItem(placement: .automatic) {

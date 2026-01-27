@@ -13,16 +13,6 @@ struct XcodeStyleStatusView: View {
         .font(.system(size: 12))
         .monospaced()
         .foregroundStyle(.secondary)
-
-      Text("|")
-        .font(.system(size: 12))
-        .monospaced()
-        .foregroundStyle(.quaternary)
-
-      Text("Today at 2:34 PM")
-        .font(.system(size: 12))
-        .monospaced()
-        .foregroundStyle(.tertiary)
     }
   }
 }
