@@ -121,4 +121,4 @@ bump-version: # Bump app version (usage: make bump-version [VERSION=x.x.x] [BUIL
 	echo "version bumped to $$version (build $$build), tagged v$$version"
 
 bump-and-release: bump-version # Bump version and push tags to trigger release
-	git push && git push --tags
+	git push --follow-tags
