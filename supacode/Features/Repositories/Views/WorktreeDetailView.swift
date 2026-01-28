@@ -186,7 +186,7 @@ struct WorktreeDetailView: View {
   }
 
   @ToolbarContentBuilder
-  private func x(
+  private func worktreeToolbar(
     worktreeID: Worktree.ID,
     toolbarState: WorktreeToolbarState
   ) -> some ToolbarContent {
