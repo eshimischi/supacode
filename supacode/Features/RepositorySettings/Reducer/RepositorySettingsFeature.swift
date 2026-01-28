@@ -47,7 +47,7 @@ struct RepositorySettingsFeature {
           repositorySettingsClient.save(settings, rootURL)
           await MainActor.run {
             NotificationCenter.default.post(
-              name: Notification.Name("repositorySettingsChanged"),
+              name: .repositorySettingsChanged,
               object: rootURL
             )
           }
@@ -62,7 +62,7 @@ struct RepositorySettingsFeature {
           repositorySettingsClient.save(settings, rootURL)
           await MainActor.run {
             NotificationCenter.default.post(
-              name: Notification.Name("repositorySettingsChanged"),
+              name: .repositorySettingsChanged,
               object: rootURL
             )
           }

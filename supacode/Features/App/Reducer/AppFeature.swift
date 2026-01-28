@@ -88,9 +88,8 @@ struct AppFeature {
             }
           },
           .run { send in
-            let repositorySettingsChanged = Notification.Name("repositorySettingsChanged")
             for await notification in NotificationCenter.default
-              .notifications(named: repositorySettingsChanged)
+              .notifications(named: .repositorySettingsChanged)
             {
               guard let rootURL = notification.object as? URL else { continue }
               await send(.repositorySettingsChanged(rootURL))
