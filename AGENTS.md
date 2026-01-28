@@ -96,6 +96,7 @@ Always read `./docs/swift-rules.md` before writing Swift code. Key points:
 - Modern SwiftUI only: `foregroundStyle()`, `NavigationStack`, `Button` over `onTapGesture()`
 - Prefer Swift-native APIs over Foundation where they exist (e.g., `replacing()` not `replacingOccurrences()`)
 - Avoid `GeometryReader` when `containerRelativeFrame()` or `visualEffect()` would work
+- No sending global Notification, see if it makes sense to use another way to communicate using TCA
 
 ## UX Standards
 
