@@ -12,8 +12,12 @@ struct RepositoriesFeaturePersistenceTests {
     let store = TestStore(initialState: RepositoriesFeature.State()) {
       RepositoriesFeature()
     } withDependencies: {
-      $0.repositoryPersistence.loadPinnedWorktreeIDs = { pinned }
-      $0.repositoryPersistence.loadRoots = { [] }
+      $0.repositoryPersistence = RepositoryPersistenceClient(
+        loadRoots: { [] },
+        saveRoots: { _ in },
+        loadPinnedWorktreeIDs: { pinned },
+        savePinnedWorktreeIDs: { _ in }
+      )
     }
 
     await store.send(.task)
@@ -21,7 +25,11 @@ struct RepositoriesFeaturePersistenceTests {
       $0.pinnedWorktreeIDs = pinned
     }
     await store.receive(.loadPersistedRepositories)
-    await store.receive(.repositoriesLoaded([], failures: [], roots: [], animated: false))
+    await store.receive(.repositoriesLoaded([], failures: [], roots: [], animated: false)) {
+      $0.repositories = []
+      $0.pinnedWorktreeIDs = []
+    }
+    await store.receive(.delegate(.repositoriesChanged([])))
     await store.finish()
   }
 }

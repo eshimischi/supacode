@@ -33,13 +33,23 @@ struct SettingsFeatureTests {
   }
 
   @Test(.dependencies) func savesUpdatesChanges() async {
+    let initialSettings = GlobalSettings(
+      appearanceMode: .system,
+      updatesAutomaticallyCheckForUpdates: false,
+      updatesAutomaticallyDownloadUpdates: false,
+      inAppNotificationsEnabled: false,
+      notificationSoundEnabled: false
+    )
     let saved = LockIsolated<GlobalSettings?>(nil)
-    let store = TestStore(initialState: SettingsFeature.State()) {
+    let store = TestStore(initialState: SettingsFeature.State(settings: initialSettings)) {
       SettingsFeature()
     } withDependencies: {
-      $0.settingsClient.save = { settings in
-        saved.withValue { $0 = settings }
-      }
+      $0.settingsClient = SettingsClient(
+        load: { initialSettings },
+        save: { settings in
+          saved.withValue { $0 = settings }
+        }
+      )
     }
 
     await store.send(.setAppearanceMode(.light)) {
@@ -47,10 +57,10 @@ struct SettingsFeatureTests {
     }
     let expectedSettings = GlobalSettings(
       appearanceMode: .light,
-      updatesAutomaticallyCheckForUpdates: true,
-      updatesAutomaticallyDownloadUpdates: false,
-      inAppNotificationsEnabled: true,
-      notificationSoundEnabled: true
+      updatesAutomaticallyCheckForUpdates: initialSettings.updatesAutomaticallyCheckForUpdates,
+      updatesAutomaticallyDownloadUpdates: initialSettings.updatesAutomaticallyDownloadUpdates,
+      inAppNotificationsEnabled: initialSettings.inAppNotificationsEnabled,
+      notificationSoundEnabled: initialSettings.notificationSoundEnabled
     )
     await store.receive(.delegate(.settingsChanged(expectedSettings)))
 
@@ -78,7 +88,10 @@ struct SettingsFeatureTests {
     let selection = SettingsSection.repository("repo-id")
     var state = SettingsFeature.State()
     state.selection = selection
-    state.repositorySettings = RepositorySettingsFeature.State(rootURL: rootURL)
+    state.repositorySettings = RepositorySettingsFeature.State(
+      rootURL: rootURL,
+      settings: .default
+    )
     let store = TestStore(initialState: state) {
       SettingsFeature()
     }
@@ -98,7 +111,10 @@ struct SettingsFeatureTests {
       $0.inAppNotificationsEnabled = false
       $0.notificationSoundEnabled = false
       $0.selection = selection
-      $0.repositorySettings = RepositorySettingsFeature.State(rootURL: rootURL)
+      $0.repositorySettings = RepositorySettingsFeature.State(
+        rootURL: rootURL,
+        settings: .default
+      )
     }
     await store.receive(.delegate(.settingsChanged(loaded)))
   }

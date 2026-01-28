@@ -1,7 +1,6 @@
 import AppKit
 import ComposableArchitecture
 import Foundation
-import Sentry
 import SwiftUI
 
 private let notificationSound: NSSound? = {
@@ -171,6 +170,23 @@ struct AppFeature {
             }
           }
         )
+
+      case .settings(.setSelection(let selection)):
+        switch selection {
+        case .repository(let repositoryID):
+          guard let repository = state.repositories.repositories.first(where: { $0.id == repositoryID }) else {
+            state.settings.repositorySettings = nil
+            return .none
+          }
+          let settings = repositorySettingsClient.load(repository.rootURL)
+          state.settings.repositorySettings = RepositorySettingsFeature.State(
+            rootURL: repository.rootURL,
+            settings: settings
+          )
+        case .general, .notifications, .updates, .github:
+          state.settings.repositorySettings = nil
+        }
+        return .none
 
       case .repositories(.worktreePullRequestLoaded(let worktreeID, let pullRequest)):
         return .send(.worktreeInfo(.cachedPullRequestUpdated(worktreeID, pullRequest)))
@@ -373,7 +389,7 @@ struct AppFeature {
       }
     }
     core
-      .printActionLabels()
+      ._printChanges()
     Scope(state: \.repositories, action: \.repositories) {
       RepositoriesFeature()
     }
@@ -386,24 +402,5 @@ struct AppFeature {
     Scope(state: \.updates, action: \.updates) {
       UpdatesFeature()
     }
-  }
-}
-
-private struct ActionLabelReducer<Base: Reducer>: Reducer {
-  let base: Base
-
-  func reduce(into state: inout Base.State, action: Base.Action) -> Effect<Base.Action> {
-    let actionLabel = debugCaseOutput(action)
-    print("received action: \(actionLabel)")
-    #if !DEBUG
-    SentrySDK.logger.info("received action: \(actionLabel)")
-    #endif
-    return base.reduce(into: &state, action: action)
-  }
-}
-
-private extension Reducer {
-  func printActionLabels() -> ActionLabelReducer<Self> {
-    ActionLabelReducer(base: self)
   }
 }
