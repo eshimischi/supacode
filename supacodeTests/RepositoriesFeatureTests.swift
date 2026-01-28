@@ -114,6 +114,37 @@ struct RepositoriesFeatureTests {
     )
   }
 
+  @Test func loadRepositoriesFailureKeepsPreviousState() async {
+    let repository = makeRepository(id: "/tmp/repo", worktrees: [])
+    let store = TestStore(initialState: RepositoriesFeature.State(repositories: [repository])) {
+      RepositoriesFeature()
+    }
+
+    let expectedAlert = AlertState<RepositoriesFeature.Alert> {
+      TextState("Failed to load repository")
+    } actions: {
+      ButtonState(role: .cancel) {
+        TextState("OK")
+      }
+    } message: {
+      TextState("boom")
+    }
+
+    await store.send(
+      .repositoriesLoaded(
+        [],
+        failures: [RepositoriesFeature.LoadFailure(rootID: repository.id, message: "boom")],
+        roots: [repository.rootURL],
+        animated: false
+      )
+    ) {
+      $0.alert = expectedAlert
+      $0.repositories = [repository]
+    }
+
+    await store.receive(.delegate(.repositoriesChanged([repository])))
+  }
+
   private func makeWorktree(id: String, name: String, repoRoot: String = "/tmp/repo") -> Worktree {
     Worktree(
       id: id,

@@ -1,5 +1,4 @@
 import ComposableArchitecture
-import Foundation
 
 struct RepositoryPersistenceClient {
   var loadRoots: @Sendable () -> [String]
@@ -10,25 +9,22 @@ struct RepositoryPersistenceClient {
 
 extension RepositoryPersistenceClient: DependencyKey {
   static let liveValue: RepositoryPersistenceClient = {
-    let userDefaults = UserDefaults.standard
-    let rootsKey = "repositories.roots"
-    let pinnedKey = "repositories.worktrees.pinned"
     return RepositoryPersistenceClient(
       loadRoots: {
-        guard let data = userDefaults.data(forKey: rootsKey) else { return [] }
-        return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+        SettingsStorage().load().repositoryRoots
       },
       saveRoots: { roots in
-        guard let data = try? JSONEncoder().encode(roots) else { return }
-        userDefaults.set(data, forKey: rootsKey)
+        var settings = SettingsStorage().load()
+        settings.repositoryRoots = roots
+        SettingsStorage().save(settings)
       },
       loadPinnedWorktreeIDs: {
-        guard let data = userDefaults.data(forKey: pinnedKey) else { return [] }
-        return (try? JSONDecoder().decode([Worktree.ID].self, from: data)) ?? []
+        SettingsStorage().load().pinnedWorktreeIDs
       },
       savePinnedWorktreeIDs: { ids in
-        guard let data = try? JSONEncoder().encode(ids) else { return }
-        userDefaults.set(data, forKey: pinnedKey)
+        var settings = SettingsStorage().load()
+        settings.pinnedWorktreeIDs = ids
+        SettingsStorage().save(settings)
       }
     )
   }()

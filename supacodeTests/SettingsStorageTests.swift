@@ -28,10 +28,14 @@ struct SettingsStorageTests {
 
     var settings = storage.load()
     settings.global.appearanceMode = .dark
+    settings.repositoryRoots = ["/tmp/repo-a", "/tmp/repo-b"]
+    settings.pinnedWorktreeIDs = ["/tmp/repo-a/wt-1"]
     storage.save(settings)
 
     let reloaded = SettingsStorage(settingsURL: settingsURL).load()
     #expect(reloaded.global.appearanceMode == .dark)
+    #expect(reloaded.repositoryRoots == ["/tmp/repo-a", "/tmp/repo-b"])
+    #expect(reloaded.pinnedWorktreeIDs == ["/tmp/repo-a/wt-1"])
   }
 
   @Test func invalidJSONResetsToDefaults() throws {
@@ -76,6 +80,34 @@ struct SettingsStorageTests {
     #expect(settings.global.updatesAutomaticallyCheckForUpdates == false)
     #expect(settings.global.updatesAutomaticallyDownloadUpdates == true)
     #expect(settings.global.inAppNotificationsEnabled == true)
+    #expect(settings.repositoryRoots.isEmpty)
+    #expect(settings.pinnedWorktreeIDs.isEmpty)
+  }
+
+  @Test func migratesRepositoryDataFromUserDefaults() throws {
+    let userDefaults = UserDefaults.standard
+    let rootsKey = "repositories.roots"
+    let pinnedKey = "repositories.worktrees.pinned"
+    defer {
+      userDefaults.removeObject(forKey: rootsKey)
+      userDefaults.removeObject(forKey: pinnedKey)
+    }
+    let roots = ["/tmp/repo-a", "/tmp/repo-b"]
+    let pinned = ["/tmp/repo-a/wt-1"]
+    userDefaults.set(try JSONEncoder().encode(roots), forKey: rootsKey)
+    userDefaults.set(try JSONEncoder().encode(pinned), forKey: pinnedKey)
+
+    let root = try makeTempDirectory()
+    defer { try? FileManager.default.removeItem(at: root) }
+    let settingsURL = root.appending(path: "settings.json")
+    let storage = SettingsStorage(settingsURL: settingsURL)
+
+    let settings = storage.load()
+
+    #expect(settings.repositoryRoots == roots)
+    #expect(settings.pinnedWorktreeIDs == pinned)
+    #expect(userDefaults.data(forKey: rootsKey) == nil)
+    #expect(userDefaults.data(forKey: pinnedKey) == nil)
   }
 
   private func makeTempDirectory() throws -> URL {

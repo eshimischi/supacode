@@ -8,14 +8,23 @@ nonisolated struct SettingsStorage {
   }
 
   func load() -> SettingsFile {
+    var settings: SettingsFile
+    var shouldSave = false
     if let data = try? Data(contentsOf: settingsURL),
-      let settings = try? JSONDecoder().decode(SettingsFile.self, from: data)
+      let decoded = try? JSONDecoder().decode(SettingsFile.self, from: data)
     {
-      return settings
+      settings = decoded
+    } else {
+      settings = SettingsFile.default
+      shouldSave = true
     }
-    let defaults = SettingsFile.default
-    save(defaults)
-    return defaults
+    if migrateFromUserDefaults(into: &settings) {
+      shouldSave = true
+    }
+    if shouldSave {
+      save(settings)
+    }
+    return settings
   }
 
   func save(_ settings: SettingsFile) {
@@ -28,5 +37,35 @@ nonisolated struct SettingsStorage {
       try data.write(to: settingsURL, options: [.atomic])
     } catch {
     }
+  }
+
+  private func migrateFromUserDefaults(into settings: inout SettingsFile) -> Bool {
+    let userDefaults = UserDefaults.standard
+    let rootsKey = "repositories.roots"
+    let pinnedKey = "repositories.worktrees.pinned"
+    var didMigrate = false
+    if settings.repositoryRoots.isEmpty,
+      let data = userDefaults.data(forKey: rootsKey),
+      let roots = try? JSONDecoder().decode([String].self, from: data),
+      !roots.isEmpty
+    {
+      settings.repositoryRoots = roots
+      didMigrate = true
+    }
+    if settings.pinnedWorktreeIDs.isEmpty,
+      let data = userDefaults.data(forKey: pinnedKey),
+      let ids = try? JSONDecoder().decode([Worktree.ID].self, from: data),
+      !ids.isEmpty
+    {
+      settings.pinnedWorktreeIDs = ids
+      didMigrate = true
+    }
+    if userDefaults.object(forKey: rootsKey) != nil {
+      userDefaults.removeObject(forKey: rootsKey)
+    }
+    if userDefaults.object(forKey: pinnedKey) != nil {
+      userDefaults.removeObject(forKey: pinnedKey)
+    }
+    return didMigrate
   }
 }
