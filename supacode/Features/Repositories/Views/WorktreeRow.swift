@@ -34,6 +34,18 @@ struct WorktreeRow: View {
       state: pullRequestState,
       number: pullRequestNumber
     )
+    let pullRequestCheckBreakdown: PullRequestCheckBreakdown? = {
+      guard let rollup = displayPullRequest?.statusCheckRollup else {
+        return nil
+      }
+      guard !rollup.checks.isEmpty else {
+        return nil
+      }
+      guard pullRequestState != "MERGED" else {
+        return nil
+      }
+      return PullRequestCheckBreakdown(checks: rollup.checks)
+    }()
     let pullRequestHelp = PullRequestBadgeStyle.helpText(state: pullRequestState, url: pullRequestURL)
     HStack(alignment: .center) {
       ZStack {
@@ -86,7 +98,8 @@ struct WorktreeRow: View {
           text: pullRequestBadgeStyle.text,
           color: pullRequestBadgeStyle.color,
           help: pullRequestHelp,
-          url: pullRequestURL
+          url: pullRequestURL,
+          checkBreakdown: pullRequestCheckBreakdown
         )
       }
       if let shortcutHint {
@@ -96,18 +109,38 @@ struct WorktreeRow: View {
   }
 
   @ViewBuilder
-  private func pullRequestBadge(text: String, color: Color, help: String, url: URL?) -> some View {
+  private func pullRequestBadge(
+    text: String,
+    color: Color,
+    help: String,
+    url: URL?,
+    checkBreakdown: PullRequestCheckBreakdown?
+  ) -> some View {
     if let url {
       Button {
         openURL(url)
       } label: {
-        PullRequestBadgeView(text: text, color: color)
+        pullRequestBadgeContent(text: text, color: color, checkBreakdown: checkBreakdown)
       }
       .buttonStyle(.plain)
       .help(help)
     } else {
-      PullRequestBadgeView(text: text, color: color)
+      pullRequestBadgeContent(text: text, color: color, checkBreakdown: checkBreakdown)
         .help(help)
+    }
+  }
+
+  @ViewBuilder
+  private func pullRequestBadgeContent(
+    text: String,
+    color: Color,
+    checkBreakdown: PullRequestCheckBreakdown?
+  ) -> some View {
+    HStack(spacing: 6) {
+      PullRequestBadgeView(text: text, color: color)
+      if let checkBreakdown {
+        PullRequestChecksRingView(breakdown: checkBreakdown)
+      }
     }
   }
 }
