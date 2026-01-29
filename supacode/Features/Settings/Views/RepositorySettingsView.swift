@@ -62,6 +62,28 @@ struct RepositorySettingsView: View {
             .foregroundStyle(.secondary)
         }
       }
+      Section {
+        Toggle(
+          "Copy ignored files to new worktrees",
+          isOn: Binding(
+            get: { store.settings.copyIgnoredOnWorktreeCreate },
+            set: { store.send(.setCopyIgnoredOnWorktreeCreate($0)) }
+          )
+        )
+        Toggle(
+          "Copy untracked files to new worktrees",
+          isOn: Binding(
+            get: { store.settings.copyUntrackedOnWorktreeCreate },
+            set: { store.send(.setCopyUntrackedOnWorktreeCreate($0)) }
+          )
+        )
+      } header: {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Worktree")
+          Text("Uses wt sync -f after creating a new worktree")
+            .foregroundStyle(.secondary)
+        }
+      }
     }
     .formStyle(.grouped)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
