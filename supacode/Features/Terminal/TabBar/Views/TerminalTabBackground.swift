@@ -24,9 +24,6 @@ struct TerminalTabBackground: View {
 
       if !isActive {
         VStack(spacing: 0) {
-          Rectangle()
-            .fill(TerminalTabBarColors.separator)
-            .frame(height: 1)
           Spacer(minLength: 0)
           Rectangle()
             .fill(TerminalTabBarColors.separator)
