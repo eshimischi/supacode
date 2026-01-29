@@ -137,7 +137,7 @@ struct AppFeature {
         let worktrees = repositories.flatMap(\.worktrees)
         state.runScriptStatusByWorktreeID = state.runScriptStatusByWorktreeID.filter { ids.contains($0.key) }
         if case .repository(let repositoryID) = state.settings.selection,
-           !repositories.contains(where: { $0.id == repositoryID })
+          !repositories.contains(where: { $0.id == repositoryID })
         {
           return .merge(
             .send(.settings(.setSelection(.general))),
@@ -340,7 +340,7 @@ struct AppFeature {
 
       case .settings(.repositorySettings(.delegate(.settingsChanged(let rootURL)))):
         guard let selectedWorktree = state.repositories.worktree(for: state.repositories.selectedWorktreeID),
-              selectedWorktree.repositoryRootURL == rootURL
+          selectedWorktree.repositoryRootURL == rootURL
         else {
           return .none
         }
@@ -419,14 +419,14 @@ private struct ActionLabelReducer<Base: Reducer>: Reducer {
   func reduce(into state: inout Base.State, action: Base.Action) -> Effect<Base.Action> {
     let actionLabel = debugCaseOutput(action)
     #if !DEBUG
-    SentrySDK.logger.info("received action: \(actionLabel)")
+      SentrySDK.logger.info("received action: \(actionLabel)")
     #endif
     return base.reduce(into: &state, action: action)
   }
 }
 
-private extension Reducer {
-  func printActionLabels() -> ActionLabelReducer<Self> {
+extension Reducer {
+  fileprivate func printActionLabels() -> ActionLabelReducer<Self> {
     ActionLabelReducer(base: self)
   }
 }

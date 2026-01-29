@@ -1,7 +1,7 @@
+import GhosttyKit
 import Testing
 
 @testable import supacode
-import GhosttyKit
 
 @MainActor
 struct GhosttySurfaceBridgeTests {

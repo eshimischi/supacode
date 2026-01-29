@@ -201,9 +201,10 @@ struct GitClient {
     guard let headURL else {
       return nil
     }
-    guard let line = try? String(contentsOf: headURL, encoding: .utf8)
-      .split(whereSeparator: \.isNewline)
-      .first
+    guard
+      let line = try? String(contentsOf: headURL, encoding: .utf8)
+        .split(whereSeparator: \.isNewline)
+        .first
     else {
       return nil
     }
@@ -377,13 +378,13 @@ nonisolated private func wrapShellError(
     gitError = .commandFailed(command: command, message: error.localizedDescription)
   }
   #if !DEBUG
-  SentrySDK.logger.error(
-    "git command failed",
-    attributes: [
-      "operation": operation.rawValue,
-      "exit_code": Int(exitCode),
-    ]
-  )
+    SentrySDK.logger.error(
+      "git command failed",
+      attributes: [
+        "operation": operation.rawValue,
+        "exit_code": Int(exitCode),
+      ]
+    )
   #endif
   return gitError
 }

@@ -18,39 +18,50 @@ struct WorktreeDetailView: View {
     let hasActiveWorktree = selectedWorktree != nil && loadingInfo == nil
     let worktreeInfoSnapshot = state.worktreeInfo.snapshot
     let openActionSelection = state.openActionSelection
-    let openSelectedWorktreeAction: (() -> Void)? = hasActiveWorktree
+    let openSelectedWorktreeAction: (() -> Void)? =
+      hasActiveWorktree
       ? { store.send(.openSelectedWorktree) }
       : nil
-    let newTerminalAction: (() -> Void)? = hasActiveWorktree
+    let newTerminalAction: (() -> Void)? =
+      hasActiveWorktree
       ? { store.send(.newTerminal) }
       : nil
-    let closeTabAction: (() -> Void)? = hasActiveWorktree
+    let closeTabAction: (() -> Void)? =
+      hasActiveWorktree
       ? { store.send(.closeTab) }
       : nil
-    let closeSurfaceAction: (() -> Void)? = hasActiveWorktree
+    let closeSurfaceAction: (() -> Void)? =
+      hasActiveWorktree
       ? { store.send(.closeSurface) }
       : nil
-    let startSearchAction: (() -> Void)? = hasActiveWorktree
+    let startSearchAction: (() -> Void)? =
+      hasActiveWorktree
       ? { store.send(.startSearch) }
       : nil
-    let searchSelectionAction: (() -> Void)? = hasActiveWorktree
+    let searchSelectionAction: (() -> Void)? =
+      hasActiveWorktree
       ? { store.send(.searchSelection) }
       : nil
-    let navigateSearchNextAction: (() -> Void)? = hasActiveWorktree
+    let navigateSearchNextAction: (() -> Void)? =
+      hasActiveWorktree
       ? { store.send(.navigateSearchNext) }
       : nil
-    let navigateSearchPreviousAction: (() -> Void)? = hasActiveWorktree
+    let navigateSearchPreviousAction: (() -> Void)? =
+      hasActiveWorktree
       ? { store.send(.navigateSearchPrevious) }
       : nil
-    let endSearchAction: (() -> Void)? = hasActiveWorktree
+    let endSearchAction: (() -> Void)? =
+      hasActiveWorktree
       ? { store.send(.endSearch) }
       : nil
-    let runScriptEnabled = hasActiveWorktree
+    let runScriptEnabled =
+      hasActiveWorktree
       && !state.selectedRunScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     let runScriptIsRunning = selectedWorktree.flatMap { state.runScriptStatusByWorktreeID[$0.id] } == true
     let runScriptAction: (() -> Void)? = runScriptEnabled ? { store.send(.runScript) } : nil
     let stopRunScriptAction: (() -> Void)? = runScriptIsRunning ? { store.send(.stopRunScript) } : nil
-    let navigationTitle = hasActiveWorktree
+    let navigationTitle =
+      hasActiveWorktree
       ? ""
       : (selectedWorktree?.name ?? loadingInfo?.name ?? "Supacode")
     let content = Group {
@@ -199,26 +210,26 @@ struct WorktreeDetailView: View {
       )
     }
     ToolbarItem(placement: .principal) {
-        HStack {
-            if let model = PullRequestStatusModel(snapshot: toolbarState.worktreeInfoSnapshot) {
-                PullRequestStatusButton(model: model).padding(.horizontal)
-            } else {
-                XcodeStyleStatusView().padding(.horizontal)
-            }
-            Divider()
-            RunScriptToolbarButton(
-              isRunning: toolbarState.runScriptIsRunning,
-              isEnabled: toolbarState.runScriptEnabled,
-              runHelpText: toolbarState.runScriptHelpText,
-              stopHelpText: toolbarState.stopRunScriptHelpText,
-              runShortcut: AppShortcuts.runScript.display,
-              stopShortcut: AppShortcuts.stopRunScript.display,
-              runAction: { store.send(.runScript) },
-              stopAction: { store.send(.stopRunScript) }
-            )
+      HStack {
+        if let model = PullRequestStatusModel(snapshot: toolbarState.worktreeInfoSnapshot) {
+          PullRequestStatusButton(model: model).padding(.horizontal)
+        } else {
+          XcodeStyleStatusView().padding(.horizontal)
         }
+        Divider()
+        RunScriptToolbarButton(
+          isRunning: toolbarState.runScriptIsRunning,
+          isEnabled: toolbarState.runScriptEnabled,
+          runHelpText: toolbarState.runScriptHelpText,
+          stopHelpText: toolbarState.stopRunScriptHelpText,
+          runShortcut: AppShortcuts.runScript.display,
+          stopShortcut: AppShortcuts.stopRunScript.display,
+          runAction: { store.send(.runScript) },
+          stopAction: { store.send(.stopRunScript) }
+        )
+      }
     }
-      
+
     ToolbarItem(placement: .automatic) {
       openMenu(
         openActionSelection: toolbarState.openActionSelection,
@@ -294,23 +305,25 @@ private struct RunScriptToolbarButton: View {
 
   var body: some View {
     if isRunning {
-      button(config: RunScriptButtonConfig(
-        title: "Stop",
-        systemImage: "stop.fill",
-        helpText: stopHelpText,
-        shortcut: stopShortcut,
-        isEnabled: true,
-        action: stopAction
-      ))
+      button(
+        config: RunScriptButtonConfig(
+          title: "Stop",
+          systemImage: "stop.fill",
+          helpText: stopHelpText,
+          shortcut: stopShortcut,
+          isEnabled: true,
+          action: stopAction
+        ))
     } else {
-      button(config: RunScriptButtonConfig(
-        title: "Run",
-        systemImage: "play.fill",
-        helpText: runHelpText,
-        shortcut: runShortcut,
-        isEnabled: isEnabled,
-        action: runAction
-      ))
+      button(
+        config: RunScriptButtonConfig(
+          title: "Run",
+          systemImage: "play.fill",
+          helpText: runHelpText,
+          shortcut: runShortcut,
+          isEnabled: isEnabled,
+          action: runAction
+        ))
     }
   }
 
@@ -402,7 +415,8 @@ private struct WorktreeToolbarPreview: View {
     let availableActions = OpenWorktreeAction.availableCases
     let resolvedOpenActionSelection = OpenWorktreeAction.availableSelection(openActionSelection)
     HStack(spacing: 0) {
-      Button {} label: {
+      Button {
+      } label: {
         OpenWorktreeActionMenuLabelView(
           action: resolvedOpenActionSelection,
           shortcutHint: showExtras ? AppShortcuts.openFinder.display : nil
@@ -416,7 +430,8 @@ private struct WorktreeToolbarPreview: View {
 
       Menu {
         ForEach(availableActions) { action in
-          Button {} label: {
+          Button {
+          } label: {
             OpenWorktreeActionMenuLabelView(action: action, shortcutHint: nil)
           }
           .buttonStyle(.plain)

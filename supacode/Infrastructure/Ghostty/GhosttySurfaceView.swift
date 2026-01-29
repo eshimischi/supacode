@@ -518,18 +518,20 @@ final class GhosttySurfaceView: NSView, Identifiable {
   private func handleControlReturn(_ event: NSEvent) -> Bool {
     guard event.charactersIgnoringModifiers == "\r" else { return false }
     guard event.modifierFlags.contains(.control) else { return false }
-    guard let finalEvent = NSEvent.keyEvent(
-      with: .keyDown,
-      location: event.locationInWindow,
-      modifierFlags: event.modifierFlags,
-      timestamp: event.timestamp,
-      windowNumber: event.windowNumber,
-      context: nil,
-      characters: "\r",
-      charactersIgnoringModifiers: "\r",
-      isARepeat: event.isARepeat,
-      keyCode: event.keyCode
-    ) else {
+    guard
+      let finalEvent = NSEvent.keyEvent(
+        with: .keyDown,
+        location: event.locationInWindow,
+        modifierFlags: event.modifierFlags,
+        timestamp: event.timestamp,
+        windowNumber: event.windowNumber,
+        context: nil,
+        characters: "\r",
+        charactersIgnoringModifiers: "\r",
+        isARepeat: event.isARepeat,
+        keyCode: event.keyCode
+      )
+    else {
       return false
     }
     sendKey(action: GHOSTTY_ACTION_PRESS, event: finalEvent)
@@ -540,18 +542,20 @@ final class GhosttySurfaceView: NSView, Identifiable {
     guard event.charactersIgnoringModifiers == "/" else { return false }
     guard event.modifierFlags.contains(.control) else { return false }
     guard event.modifierFlags.isDisjoint(with: [.shift, .command, .option]) else { return false }
-    guard let finalEvent = NSEvent.keyEvent(
-      with: .keyDown,
-      location: event.locationInWindow,
-      modifierFlags: event.modifierFlags,
-      timestamp: event.timestamp,
-      windowNumber: event.windowNumber,
-      context: nil,
-      characters: "_",
-      charactersIgnoringModifiers: "_",
-      isARepeat: event.isARepeat,
-      keyCode: event.keyCode
-    ) else {
+    guard
+      let finalEvent = NSEvent.keyEvent(
+        with: .keyDown,
+        location: event.locationInWindow,
+        modifierFlags: event.modifierFlags,
+        timestamp: event.timestamp,
+        windowNumber: event.windowNumber,
+        context: nil,
+        characters: "_",
+        charactersIgnoringModifiers: "_",
+        isARepeat: event.isARepeat,
+        keyCode: event.keyCode
+      )
+    else {
       return false
     }
     sendKey(action: GHOSTTY_ACTION_PRESS, event: finalEvent)
@@ -636,38 +640,44 @@ final class GhosttySurfaceView: NSView, Identifiable {
     }
     menu.addItem(NSMenuItem(title: "Paste", action: #selector(paste(_:)), keyEquivalent: ""))
     menu.addItem(.separator())
-    menu.addItem(menuItem(
-      title: "Split Right",
-      action: #selector(splitRight(_:)),
-      symbol: "rectangle.righthalf.inset.filled"
-    ))
-    menu.addItem(menuItem(
-      title: "Split Left",
-      action: #selector(splitLeft(_:)),
-      symbol: "rectangle.leadinghalf.inset.filled"
-    ))
-    menu.addItem(menuItem(
-      title: "Split Down",
-      action: #selector(splitDown(_:)),
-      symbol: "rectangle.bottomhalf.inset.filled"
-    ))
-    menu.addItem(menuItem(
-      title: "Split Up",
-      action: #selector(splitUp(_:)),
-      symbol: "rectangle.tophalf.inset.filled"
-    ))
+    menu.addItem(
+      menuItem(
+        title: "Split Right",
+        action: #selector(splitRight(_:)),
+        symbol: "rectangle.righthalf.inset.filled"
+      ))
+    menu.addItem(
+      menuItem(
+        title: "Split Left",
+        action: #selector(splitLeft(_:)),
+        symbol: "rectangle.leadinghalf.inset.filled"
+      ))
+    menu.addItem(
+      menuItem(
+        title: "Split Down",
+        action: #selector(splitDown(_:)),
+        symbol: "rectangle.bottomhalf.inset.filled"
+      ))
+    menu.addItem(
+      menuItem(
+        title: "Split Up",
+        action: #selector(splitUp(_:)),
+        symbol: "rectangle.tophalf.inset.filled"
+      ))
     menu.addItem(.separator())
-    menu.addItem(menuItem(
-      title: "Reset Terminal",
-      action: #selector(resetTerminal(_:)),
-      symbol: "arrow.trianglehead.2.clockwise"
-    ))
+    menu.addItem(
+      menuItem(
+        title: "Reset Terminal",
+        action: #selector(resetTerminal(_:)),
+        symbol: "arrow.trianglehead.2.clockwise"
+      ))
     menu.addItem(.separator())
-    menu.addItem(menuItem(
-      title: "Change Title...",
-      action: #selector(changeTitle(_:)),
-      symbol: "pencil.line"
-    ))
+    menu.addItem(
+      menuItem(
+        title: "Change Title...",
+        action: #selector(changeTitle(_:)),
+        symbol: "pencil.line"
+      ))
     return menu
   }
 
@@ -1127,53 +1137,59 @@ final class GhosttySurfaceScrollView: NSView {
     refreshAppearance()
 
     scrollView.contentView.postsBoundsChangedNotifications = true
-    observers.append(NotificationCenter.default.addObserver(
-      forName: NSView.boundsDidChangeNotification,
-      object: scrollView.contentView,
-      queue: .main
-    ) { [weak self] _ in
-      self?.handleScrollChange()
-    })
+    observers.append(
+      NotificationCenter.default.addObserver(
+        forName: NSView.boundsDidChangeNotification,
+        object: scrollView.contentView,
+        queue: .main
+      ) { [weak self] _ in
+        self?.handleScrollChange()
+      })
 
-    observers.append(NotificationCenter.default.addObserver(
-      forName: NSScrollView.willStartLiveScrollNotification,
-      object: scrollView,
-      queue: .main
-    ) { [weak self] _ in
-      self?.isLiveScrolling = true
-    })
+    observers.append(
+      NotificationCenter.default.addObserver(
+        forName: NSScrollView.willStartLiveScrollNotification,
+        object: scrollView,
+        queue: .main
+      ) { [weak self] _ in
+        self?.isLiveScrolling = true
+      })
 
-    observers.append(NotificationCenter.default.addObserver(
-      forName: NSScrollView.didEndLiveScrollNotification,
-      object: scrollView,
-      queue: .main
-    ) { [weak self] _ in
-      self?.isLiveScrolling = false
-    })
+    observers.append(
+      NotificationCenter.default.addObserver(
+        forName: NSScrollView.didEndLiveScrollNotification,
+        object: scrollView,
+        queue: .main
+      ) { [weak self] _ in
+        self?.isLiveScrolling = false
+      })
 
-    observers.append(NotificationCenter.default.addObserver(
-      forName: NSScrollView.didLiveScrollNotification,
-      object: scrollView,
-      queue: .main
-    ) { [weak self] _ in
-      self?.handleLiveScroll()
-    })
+    observers.append(
+      NotificationCenter.default.addObserver(
+        forName: NSScrollView.didLiveScrollNotification,
+        object: scrollView,
+        queue: .main
+      ) { [weak self] _ in
+        self?.handleLiveScroll()
+      })
 
-    observers.append(NotificationCenter.default.addObserver(
-      forName: NSScroller.preferredScrollerStyleDidChangeNotification,
-      object: nil,
-      queue: nil
-    ) { [weak self] _ in
-      self?.handleScrollerStyleChange()
-    })
+    observers.append(
+      NotificationCenter.default.addObserver(
+        forName: NSScroller.preferredScrollerStyleDidChangeNotification,
+        object: nil,
+        queue: nil
+      ) { [weak self] _ in
+        self?.handleScrollerStyleChange()
+      })
 
-    observers.append(NotificationCenter.default.addObserver(
-      forName: .ghosttyRuntimeConfigDidChange,
-      object: nil,
-      queue: .main
-    ) { [weak self] _ in
-      self?.refreshAppearance()
-    })
+    observers.append(
+      NotificationCenter.default.addObserver(
+        forName: .ghosttyRuntimeConfigDidChange,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        self?.refreshAppearance()
+      })
   }
 
   required init?(coder: NSCoder) {
@@ -1271,14 +1287,15 @@ final class GhosttySurfaceScrollView: NSView {
     trackingAreas.forEach { removeTrackingArea($0) }
     super.updateTrackingAreas()
     guard let scroller = scrollView.verticalScroller else { return }
-    addTrackingArea(NSTrackingArea(
-      rect: convert(scroller.bounds, from: scroller),
-      options: [
-        .mouseMoved,
-        .activeInKeyWindow,
-      ],
-      owner: self,
-      userInfo: nil
-    ))
+    addTrackingArea(
+      NSTrackingArea(
+        rect: convert(scroller.bounds, from: scroller),
+        options: [
+          .mouseMoved,
+          .activeInKeyWindow,
+        ],
+        owner: self,
+        userInfo: nil
+      ))
   }
 }

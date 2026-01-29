@@ -85,11 +85,12 @@ struct WorktreeInfoView: View {
               }
 
               LabeledContent("PR state") {
-                Text(prStateText(
-                  state: snapshot.pullRequestState,
-                  isDraft: snapshot.pullRequestIsDraft,
-                  reviewDecision: snapshot.pullRequestReviewDecision
-                ))
+                Text(
+                  prStateText(
+                    state: snapshot.pullRequestState,
+                    isDraft: snapshot.pullRequestIsDraft,
+                    reviewDecision: snapshot.pullRequestReviewDecision
+                  ))
               }
 
               if let updatedAt = snapshot.pullRequestUpdatedAt {

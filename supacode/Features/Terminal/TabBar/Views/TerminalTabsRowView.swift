@@ -156,10 +156,12 @@ struct TerminalTabsRowView: View {
         let adjustedIndex = targetIndex > sourceIndex ? targetIndex - 1 : targetIndex
         let safeIndex = min(max(0, adjustedIndex), newOrder.count)
         newOrder.insert(draggedId, at: safeIndex)
-        withAnimation(.spring(
-          duration: TerminalTabBarMetrics.reorderAnimationDuration,
-          bounce: TerminalTabBarMetrics.reorderAnimationBounce
-        )) {
+        withAnimation(
+          .spring(
+            duration: TerminalTabBarMetrics.reorderAnimationDuration,
+            bounce: TerminalTabBarMetrics.reorderAnimationBounce
+          )
+        ) {
           openedTabs = newOrder
         }
         manager.reorderTabs(newOrder)

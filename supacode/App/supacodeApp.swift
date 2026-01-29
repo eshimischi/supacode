@@ -5,11 +5,11 @@
 //  Created by khoi on 20/1/26.
 //
 
+import ComposableArchitecture
 import Foundation
 import GhosttyKit
-import SwiftUI
-import ComposableArchitecture
 import Sentry
+import SwiftUI
 
 private enum GhosttyCLI {
   static let argv: [UnsafeMutablePointer<CChar>?] = {
@@ -36,10 +36,10 @@ struct SupacodeApp: App {
 
   @MainActor init() {
     #if !DEBUG
-    SentrySDK.start { options in
-      options.dsn = "https://fb4d394e0bd3e72871b01c7ef3cac129@o1224589.ingest.us.sentry.io/4510770231050240"
-      options.tracesSampleRate = 1.0
-    }
+      SentrySDK.start { options in
+        options.dsn = "https://fb4d394e0bd3e72871b01c7ef3cac129@o1224589.ingest.us.sentry.io/4510770231050240"
+        options.tracesSampleRate = 1.0
+      }
     #endif
     if let resourceURL = Bundle.main.resourceURL?.appendingPathComponent("ghostty") {
       setenv("GHOSTTY_RESOURCES_DIR", resourceURL.path, 1)
@@ -65,26 +65,26 @@ struct SupacodeApp: App {
     let appStore = Store(
       initialState: AppFeature.State(settings: SettingsFeature.State(settings: initialSettings))
     ) {
-        AppFeature()
-          .logActions()
-      } withDependencies: { values in
-        values.terminalClient = TerminalClient(
-          send: { command in
-            terminalManager.handleCommand(command)
-          },
-          events: {
-            terminalManager.eventStream()
-          }
-        )
-        values.worktreeInfoWatcher = WorktreeInfoWatcherClient(
-          send: { command in
-            worktreeInfoWatcher.handleCommand(command)
-          },
-          events: {
-            worktreeInfoWatcher.eventStream()
-          }
-        )
-      }
+      AppFeature()
+        .logActions()
+    } withDependencies: { values in
+      values.terminalClient = TerminalClient(
+        send: { command in
+          terminalManager.handleCommand(command)
+        },
+        events: {
+          terminalManager.eventStream()
+        }
+      )
+      values.worktreeInfoWatcher = WorktreeInfoWatcherClient(
+        send: { command in
+          worktreeInfoWatcher.handleCommand(command)
+        },
+        events: {
+          worktreeInfoWatcher.eventStream()
+        }
+      )
+    }
     _store = State(initialValue: appStore)
     SettingsWindowManager.shared.configure(
       store: appStore,

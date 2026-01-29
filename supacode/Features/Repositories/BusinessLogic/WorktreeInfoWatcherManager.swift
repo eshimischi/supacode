@@ -1,6 +1,6 @@
+import Darwin
 import Dispatch
 import Foundation
-import Darwin
 
 @MainActor
 final class WorktreeInfoWatcherManager {
@@ -80,10 +80,12 @@ final class WorktreeInfoWatcherManager {
   }
 
   private func configureWatcher(for worktree: Worktree) {
-    guard let headURL = GitWorktreeHeadResolver.headURL(
-      for: worktree.workingDirectory,
-      fileManager: .default
-    ) else {
+    guard
+      let headURL = GitWorktreeHeadResolver.headURL(
+        for: worktree.workingDirectory,
+        fileManager: .default
+      )
+    else {
       stopWatcher(for: worktree.id)
       return
     }

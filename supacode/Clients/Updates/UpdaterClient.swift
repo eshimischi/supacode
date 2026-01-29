@@ -32,7 +32,7 @@ extension UpdaterClient: DependencyKey {
 
   static let testValue = UpdaterClient(
     configure: { _, _, _ in },
-    checkForUpdates: { }
+    checkForUpdates: {}
   )
 }
 

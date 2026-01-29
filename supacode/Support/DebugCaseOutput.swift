@@ -1,6 +1,6 @@
-import Foundation
 import ComposableArchitecture
 import CustomDump
+import Foundation
 import Sentry
 
 extension Reducer where State: Equatable {
@@ -16,18 +16,18 @@ struct LogActionsReducer<Base: Reducer>: Reducer where Base.State: Equatable {
   func reduce(into state: inout Base.State, action: Base.Action) -> Effect<Base.Action> {
     let actionLabel = debugCaseOutput(action)
     #if DEBUG
-    let previousState = state
-    let effects = base.reduce(into: &state, action: action)
-    print("Action: \(actionLabel)")
-    if previousState != state, let diff = CustomDump.diff(previousState, state) {
-      print(diff)
-    }
-    return effects
+      let previousState = state
+      let effects = base.reduce(into: &state, action: action)
+      print("Action: \(actionLabel)")
+      if previousState != state, let diff = CustomDump.diff(previousState, state) {
+        print(diff)
+      }
+      return effects
     #else
-    let breadcrumb = Breadcrumb(level: .debug, category: "action")
-    breadcrumb.message = actionLabel
-    SentrySDK.addBreadcrumb(breadcrumb)
-    return base.reduce(into: &state, action: action)
+      let breadcrumb = Breadcrumb(level: .debug, category: "action")
+      breadcrumb.message = actionLabel
+      SentrySDK.addBreadcrumb(breadcrumb)
+      return base.reduce(into: &state, action: action)
     #endif
   }
 }

@@ -486,11 +486,12 @@ final class WorktreeTerminalState {
     let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !(trimmedTitle.isEmpty && trimmedBody.isEmpty) else { return }
-    notifications.append(WorktreeTerminalNotification(
-      surfaceId: surfaceId,
-      title: trimmedTitle,
-      body: trimmedBody
-    ))
+    notifications.append(
+      WorktreeTerminalNotification(
+        surfaceId: surfaceId,
+        title: trimmedTitle,
+        body: trimmedBody
+      ))
     if !isSelected() {
       hasUnseenNotification = true
     }

@@ -176,9 +176,10 @@ struct RepositoriesFeature {
         }
         if didPrunePinned {
           let pinnedWorktreeIDs = state.pinnedWorktreeIDs
-          allEffects.append(.run { _ in
-            await repositoryPersistence.savePinnedWorktreeIDs(pinnedWorktreeIDs)
-          })
+          allEffects.append(
+            .run { _ in
+              await repositoryPersistence.savePinnedWorktreeIDs(pinnedWorktreeIDs)
+            })
         }
         return .merge(allEffects)
 
@@ -237,10 +238,10 @@ struct RepositoriesFeature {
         } else {
           let errors = failures.map(\.message)
           if !errors.isEmpty {
-          state.alert = errorAlert(
-            title: errors.count == 1 ? "Failed to load repository" : "Failed to load repositories",
-            message: errors.joined(separator: "\n")
-          )
+            state.alert = errorAlert(
+              title: errors.count == 1 ? "Failed to load repository" : "Failed to load repositories",
+              message: errors.joined(separator: "\n")
+            )
           }
         }
         let selectionChanged = previousSelection != state.selectedWorktreeID
@@ -253,9 +254,10 @@ struct RepositoriesFeature {
         }
         if didPrunePinned {
           let pinnedWorktreeIDs = state.pinnedWorktreeIDs
-          allEffects.append(.run { _ in
-            await repositoryPersistence.savePinnedWorktreeIDs(pinnedWorktreeIDs)
-          })
+          allEffects.append(
+            .run { _ in
+              await repositoryPersistence.savePinnedWorktreeIDs(pinnedWorktreeIDs)
+            })
         }
         return .merge(allEffects)
 
@@ -495,7 +497,8 @@ struct RepositoriesFeature {
         state.alert = nil
         state.deletingWorktreeIDs.insert(worktree.id)
         let selectionWasRemoved = state.selectedWorktreeID == worktree.id
-        let nextSelection = selectionWasRemoved
+        let nextSelection =
+          selectionWasRemoved
           ? nextWorktreeID(afterRemoving: worktree, in: repository, state: state)
           : nil
         return .run { send in
@@ -551,9 +554,10 @@ struct RepositoriesFeature {
         }
         state.alert = nil
         state.removingRepositoryIDs.insert(repository.id)
-        let selectionWasRemoved = state.selectedWorktreeID.map { id in
-          repository.worktrees.contains(where: { $0.id == id })
-        } ?? false
+        let selectionWasRemoved =
+          state.selectedWorktreeID.map { id in
+            repository.worktrees.contains(where: { $0.id == id })
+          } ?? false
         return .send(.repositoryRemoved(repository.id, selectionWasRemoved: selectionWasRemoved))
 
       case .repositoryRemoved(let repositoryID, let selectionWasRemoved):

@@ -1,9 +1,9 @@
 import ComposableArchitecture
 import SwiftUI
 
-private extension View {
+extension View {
   @ViewBuilder
-  func removingSidebarToggle() -> some View {
+  fileprivate func removingSidebarToggle() -> some View {
     if #available(macOS 14.0, *) {
       toolbar(removing: .sidebarToggle)
     } else {

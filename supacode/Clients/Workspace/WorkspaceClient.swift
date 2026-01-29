@@ -2,11 +2,12 @@ import AppKit
 import ComposableArchitecture
 
 struct WorkspaceClient {
-  var open: @MainActor @Sendable (
-    _ action: OpenWorktreeAction,
-    _ worktree: Worktree,
-    _ onError: @escaping @MainActor (OpenActionError) -> Void
-  ) -> Void
+  var open:
+    @MainActor @Sendable (
+      _ action: OpenWorktreeAction,
+      _ worktree: Worktree,
+      _ onError: @escaping @MainActor (OpenActionError) -> Void
+    ) -> Void
 }
 
 extension WorkspaceClient: DependencyKey {

@@ -4,10 +4,12 @@ enum GitWorktreeHeadResolver {
   static func headURL(for worktreeURL: URL, fileManager: FileManager) -> URL? {
     let gitURL = worktreeURL.appending(path: ".git")
     var isDirectory = ObjCBool(false)
-    guard fileManager.fileExists(
-      atPath: gitURL.path(percentEncoded: false),
-      isDirectory: &isDirectory
-    ) else {
+    guard
+      fileManager.fileExists(
+        atPath: gitURL.path(percentEncoded: false),
+        isDirectory: &isDirectory
+      )
+    else {
       return nil
     }
     if isDirectory.boolValue {

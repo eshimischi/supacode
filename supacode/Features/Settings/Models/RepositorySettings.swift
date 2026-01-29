@@ -39,19 +39,24 @@ nonisolated struct RepositorySettings: Codable, Equatable, Sendable {
 
   init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    setupScript = try container.decodeIfPresent(String.self, forKey: .setupScript)
+    setupScript =
+      try container.decodeIfPresent(String.self, forKey: .setupScript)
       ?? Self.default.setupScript
-    runScript = try container.decodeIfPresent(String.self, forKey: .runScript)
+    runScript =
+      try container.decodeIfPresent(String.self, forKey: .runScript)
       ?? Self.default.runScript
-    openActionID = try container.decodeIfPresent(String.self, forKey: .openActionID)
+    openActionID =
+      try container.decodeIfPresent(String.self, forKey: .openActionID)
       ?? Self.default.openActionID
-    copyIgnoredOnWorktreeCreate = try container.decodeIfPresent(
-      Bool.self,
-      forKey: .copyIgnoredOnWorktreeCreate
-    ) ?? Self.default.copyIgnoredOnWorktreeCreate
-    copyUntrackedOnWorktreeCreate = try container.decodeIfPresent(
-      Bool.self,
-      forKey: .copyUntrackedOnWorktreeCreate
-    ) ?? Self.default.copyUntrackedOnWorktreeCreate
+    copyIgnoredOnWorktreeCreate =
+      try container.decodeIfPresent(
+        Bool.self,
+        forKey: .copyIgnoredOnWorktreeCreate
+      ) ?? Self.default.copyIgnoredOnWorktreeCreate
+    copyUntrackedOnWorktreeCreate =
+      try container.decodeIfPresent(
+        Bool.self,
+        forKey: .copyUntrackedOnWorktreeCreate
+      ) ?? Self.default.copyUntrackedOnWorktreeCreate
   }
 }

@@ -7,11 +7,6 @@ struct RepositorySettingsFeature {
   struct State: Equatable {
     var rootURL: URL
     var settings: RepositorySettings
-
-    init(rootURL: URL, settings: RepositorySettings) {
-      self.rootURL = rootURL
-      self.settings = settings
-    }
   }
 
   enum Action: Equatable {

@@ -319,12 +319,12 @@ extension Notification.Name {
   static let ghosttyRuntimeConfigDidChange = Notification.Name("ghosttyRuntimeConfigDidChange")
 }
 
-private extension NSColor {
-  var isLightColor: Bool {
+extension NSColor {
+  fileprivate var isLightColor: Bool {
     luminance > 0.5
   }
 
-  var luminance: Double {
+  fileprivate var luminance: Double {
     var red: CGFloat = 0
     var green: CGFloat = 0
     var blue: CGFloat = 0
@@ -334,7 +334,7 @@ private extension NSColor {
     return (0.299 * red) + (0.587 * green) + (0.114 * blue)
   }
 
-  convenience init(ghostty: ghostty_config_color_s) {
+  fileprivate convenience init(ghostty: ghostty_config_color_s) {
     let red = Double(ghostty.r) / 255
     let green = Double(ghostty.g) / 255
     let blue = Double(ghostty.b) / 255

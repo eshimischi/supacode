@@ -20,7 +20,7 @@ struct UpdatesFeature {
   var body: some Reducer<State, Action> {
     Reduce { state, action in
       switch action {
-      case let .applySettings(checks, downloads):
+      case .applySettings(let checks, let downloads):
         let checkInBackground = !state.didConfigureUpdates
         state.didConfigureUpdates = true
         return .run { _ in

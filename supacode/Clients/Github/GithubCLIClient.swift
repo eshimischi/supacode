@@ -57,11 +57,11 @@ extension GithubCLIClient: DependencyKey {
           arguments: ["repo", "view", "--json", "defaultBranchRef"],
           repoRoot: repoRoot
         )
-      let data = Data(output.utf8)
-      let decoder = JSONDecoder()
-      decoder.dateDecodingStrategy = .iso8601
-      let response = try decoder.decode(GithubRepoViewResponse.self, from: data)
-      return response.defaultBranchRef.name
+        let data = Data(output.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let response = try decoder.decode(GithubRepoViewResponse.self, from: data)
+        return response.defaultBranchRef.name
       },
       latestRun: { repoRoot, branch in
         let output = try await runGh(
@@ -78,14 +78,14 @@ extension GithubCLIClient: DependencyKey {
           ],
           repoRoot: repoRoot
         )
-      if output.isEmpty {
-        return nil
-      }
-      let data = Data(output.utf8)
-      let decoder = JSONDecoder()
-      decoder.dateDecodingStrategy = .iso8601
-      let runs = try decoder.decode([GithubWorkflowRun].self, from: data)
-      return runs.first
+        if output.isEmpty {
+          return nil
+        }
+        let data = Data(output.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let runs = try decoder.decode([GithubWorkflowRun].self, from: data)
+        return runs.first
       },
       currentPullRequest: { worktreeRoot in
         let baseFields = [
@@ -157,7 +157,8 @@ extension GithubCLIClient: DependencyKey {
         let data = Data(output.utf8)
         let response = try decodeAuthStatusResponse(from: data)
         guard let (host, accounts) = response.hosts.first,
-              let activeAccount = accounts.first(where: { $0.active }) else {
+          let activeAccount = accounts.first(where: { $0.active })
+        else {
           return nil
         }
         return GithubAuthStatus(username: activeAccount.login, host: host)

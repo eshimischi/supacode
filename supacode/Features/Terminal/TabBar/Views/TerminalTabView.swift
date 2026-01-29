@@ -50,7 +50,7 @@ struct TerminalTabView: View {
         isDragging: isDragging,
         isHovering: isHovering
       )
-        .animation(.easeInOut(duration: TerminalTabBarMetrics.hoverAnimationDuration), value: isHovering)
+      .animation(.easeInOut(duration: TerminalTabBarMetrics.hoverAnimationDuration), value: isHovering)
     }
     .frame(
       minWidth: TerminalTabBarMetrics.tabMinWidth,

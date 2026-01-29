@@ -8,19 +8,21 @@ struct GhosttySurfaceProgressBar: View {
   @State private var position: CGFloat = 0
 
   var body: some View {
-    let color: Color = switch progressState {
-    case GHOSTTY_PROGRESS_STATE_ERROR: .red
-    case GHOSTTY_PROGRESS_STATE_PAUSE: .orange
-    default: .accentColor
-    }
+    let color: Color =
+      switch progressState {
+      case GHOSTTY_PROGRESS_STATE_ERROR: .red
+      case GHOSTTY_PROGRESS_STATE_PAUSE: .orange
+      default: .accentColor
+      }
     let progress: Int? =
       progressValue ?? (progressState == GHOSTTY_PROGRESS_STATE_PAUSE ? 100 : nil)
-    let accessibilityLabel: String = switch progressState {
-    case GHOSTTY_PROGRESS_STATE_ERROR: "Terminal progress - Error"
-    case GHOSTTY_PROGRESS_STATE_PAUSE: "Terminal progress - Paused"
-    case GHOSTTY_PROGRESS_STATE_INDETERMINATE: "Terminal progress - In progress"
-    default: "Terminal progress"
-    }
+    let accessibilityLabel: String =
+      switch progressState {
+      case GHOSTTY_PROGRESS_STATE_ERROR: "Terminal progress - Error"
+      case GHOSTTY_PROGRESS_STATE_PAUSE: "Terminal progress - Paused"
+      case GHOSTTY_PROGRESS_STATE_INDETERMINATE: "Terminal progress - In progress"
+      default: "Terminal progress"
+      }
     let accessibilityValue: String =
       if let progress {
         "\(progress) percent complete"

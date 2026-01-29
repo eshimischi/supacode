@@ -16,11 +16,12 @@ struct WorktreeRow: View {
     let showsSpinner = isLoading || taskStatus == .running
     let branchIconName = isMainWorktree ? "star.fill" : (isPinned ? "pin.fill" : "arrow.triangle.branch")
     let pullRequest = info?.pullRequest
-    let matchesWorktree = if let pullRequest {
-      pullRequest.headRefName == nil || pullRequest.headRefName == name
-    } else {
-      false
-    }
+    let matchesWorktree =
+      if let pullRequest {
+        pullRequest.headRefName == nil || pullRequest.headRefName == name
+      } else {
+        false
+      }
     let displayPullRequest = matchesWorktree ? pullRequest : nil
     let displayAddedLines = displayPullRequest?.additions ?? info?.addedLines
     let displayRemovedLines = displayPullRequest?.deletions ?? info?.removedLines
