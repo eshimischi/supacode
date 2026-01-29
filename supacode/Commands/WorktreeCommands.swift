@@ -1,3 +1,4 @@
+import AppKit
 import ComposableArchitecture
 import SwiftUI
 
@@ -5,7 +6,6 @@ struct WorktreeCommands: Commands {
   let store: StoreOf<RepositoriesFeature>
   @ObservedObject private var viewStore: ViewStore<RepositoriesFeature.State, RepositoriesFeature.Action>
   @FocusedValue(\.openSelectedWorktreeAction) private var openSelectedWorktreeAction
-  @FocusedValue(\.openPullRequestAction) private var openPullRequestAction
   @FocusedValue(\.removeWorktreeAction) private var removeWorktreeAction
   @FocusedValue(\.runScriptAction) private var runScriptAction
   @FocusedValue(\.stopRunScriptAction) private var stopRunScriptAction
@@ -17,6 +17,7 @@ struct WorktreeCommands: Commands {
 
   var body: some Commands {
     let orderedRows = viewStore.state.orderedWorktreeRows()
+    let pullRequestURL = selectedPullRequestURL
     CommandMenu("Worktrees") {
       ForEach(worktreeShortcuts.indices, id: \.self) { index in
         let shortcut = worktreeShortcuts[index]
@@ -42,14 +43,16 @@ struct WorktreeCommands: Commands {
       .help("Open Worktree (\(AppShortcuts.openFinder.display))")
       .disabled(openSelectedWorktreeAction == nil)
       Button("Open Pull Request on GitHub") {
-        openPullRequestAction?()
+        if let pullRequestURL {
+          NSWorkspace.shared.open(pullRequestURL)
+        }
       }
       .keyboardShortcut(
         AppShortcuts.openPullRequest.keyEquivalent,
         modifiers: AppShortcuts.openPullRequest.modifiers
       )
       .help("Open Pull Request on GitHub (\(AppShortcuts.openPullRequest.display))")
-      .disabled(openPullRequestAction == nil)
+      .disabled(pullRequestURL == nil)
       Button("New Worktree", systemImage: "plus") {
         store.send(.createRandomWorktree)
       }
@@ -98,6 +101,14 @@ struct WorktreeCommands: Commands {
     AppShortcuts.worktreeSelection
   }
 
+  private var selectedPullRequestURL: URL? {
+    guard let selectedWorktreeID = viewStore.state.selectedWorktreeID else {
+      return nil
+    }
+    let pullRequestURL = viewStore.state.worktreeInfoByID[selectedWorktreeID]?.pullRequest?.url
+    return pullRequestURL.flatMap(URL.init(string:))
+  }
+
   private func worktreeShortcutButton(
     index: Int,
     shortcut: AppShortcut,
@@ -129,19 +140,10 @@ private struct OpenSelectedWorktreeActionKey: FocusedValueKey {
   typealias Value = () -> Void
 }
 
-private struct OpenPullRequestActionKey: FocusedValueKey {
-  typealias Value = () -> Void
-}
-
 extension FocusedValues {
   var openSelectedWorktreeAction: (() -> Void)? {
     get { self[OpenSelectedWorktreeActionKey.self] }
     set { self[OpenSelectedWorktreeActionKey.self] = newValue }
-  }
-
-  var openPullRequestAction: (() -> Void)? {
-    get { self[OpenPullRequestActionKey.self] }
-    set { self[OpenPullRequestActionKey.self] = newValue }
   }
 
   var removeWorktreeAction: (() -> Void)? {
