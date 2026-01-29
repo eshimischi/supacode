@@ -1,20 +1,34 @@
 import Foundation
 import ComposableArchitecture
+import CustomDump
+import Sentry
 
-extension Reducer {
+extension Reducer where State: Equatable {
   @ReducerBuilder<State, Action>
-  func logActions(_ log: @escaping (String) -> Void) -> some Reducer<State, Action> {
-    LogActionsReducer(base: self, log: log)
+  func logActions() -> some Reducer<State, Action> {
+    LogActionsReducer(base: self)
   }
 }
 
-struct LogActionsReducer<Base: Reducer>: Reducer {
+struct LogActionsReducer<Base: Reducer>: Reducer where Base.State: Equatable {
   let base: Base
-  let log: (String) -> Void
 
   func reduce(into state: inout Base.State, action: Base.Action) -> Effect<Base.Action> {
-    log(debugCaseOutput(action))
+    let actionLabel = debugCaseOutput(action)
+    #if DEBUG
+    let previousState = state
+    let effects = base.reduce(into: &state, action: action)
+    print("Action: \(actionLabel)")
+    if previousState != state, let diff = CustomDump.diff(previousState, state) {
+      print(diff)
+    }
+    return effects
+    #else
+    let breadcrumb = Breadcrumb(level: .debug, category: "action")
+    breadcrumb.message = actionLabel
+    SentrySDK.addBreadcrumb(breadcrumb)
     return base.reduce(into: &state, action: action)
+    #endif
   }
 }
 
