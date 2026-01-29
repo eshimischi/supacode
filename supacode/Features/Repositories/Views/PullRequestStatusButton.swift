@@ -5,28 +5,30 @@ struct PullRequestStatusButton: View {
   @Environment(\.openURL) private var openURL
 
   var body: some View {
-    Button {
-      if let url = model.url {
-        openURL(url)
+    HStack(spacing: 6) {
+      if !model.statusChecks.isEmpty {
+        PullRequestChecksPopoverButton(checks: model.statusChecks)
       }
-    } label: {
-      HStack(spacing: 6) {
-        if let checkBreakdown = model.checkBreakdown {
-          PullRequestChecksRingView(breakdown: checkBreakdown)
+      Button {
+        if let url = model.url {
+          openURL(url)
         }
-        PullRequestBadgeView(
-          text: model.badgeText,
-          color: model.badgeColor
-        )
-        if let detailText = model.detailText {
-          Text(detailText)
+      } label: {
+        HStack(spacing: 6) {
+          PullRequestBadgeView(
+            text: model.badgeText,
+            color: model.badgeColor
+          )
+          if let detailText = model.detailText {
+            Text(detailText)
+          }
         }
       }
-      .font(.caption)
-      .monospaced()
+      .buttonStyle(.plain)
+      .help(model.helpText)
     }
-    .buttonStyle(.plain)
-    .help(model.helpText)
+    .font(.caption)
+    .monospaced()
   }
 
 }
@@ -35,7 +37,7 @@ struct PullRequestStatusModel: Equatable {
   let number: Int
   let state: String?
   let url: URL?
-  let checkBreakdown: PullRequestCheckBreakdown?
+  let statusChecks: [GithubPullRequestStatusCheck]
   let detailText: String?
 
   init?(snapshot: WorktreeInfoSnapshot?) {
@@ -52,37 +54,20 @@ struct PullRequestStatusModel: Equatable {
     self.url = snapshot.pullRequestURL.flatMap(URL.init(string:))
     if state == "MERGED" {
       self.detailText = "Merged"
-      self.checkBreakdown = nil
+      self.statusChecks = []
       return
     }
     let isDraft = snapshot.pullRequestIsDraft
     let prefix = "\(isDraft ? "(Drafted) " : "")↗ - "
     let checks = snapshot.pullRequestStatusChecks
+    self.statusChecks = checks
     if checks.isEmpty {
       self.detailText = prefix + "Checks unavailable"
-      self.checkBreakdown = nil
       return
     }
     let breakdown = PullRequestCheckBreakdown(checks: checks)
     let checksLabel = breakdown.total == 1 ? "check" : "checks"
-    var parts: [String] = []
-    if breakdown.failed > 0 {
-      parts.append("\(breakdown.failed) failed")
-    }
-    if breakdown.inProgress > 0 {
-      parts.append("\(breakdown.inProgress) in progress")
-    }
-    if breakdown.skipped > 0 {
-      parts.append("\(breakdown.skipped) skipped")
-    }
-    if breakdown.expected > 0 {
-      parts.append("\(breakdown.expected) expected")
-    }
-    if breakdown.total > 0 {
-      parts.append("\(breakdown.passed) successful")
-    }
-    self.detailText = prefix + parts.joined(separator: ", ") + " \(checksLabel)"
-    self.checkBreakdown = breakdown
+    self.detailText = prefix + breakdown.summaryText + " \(checksLabel)"
   }
 
   var badgeText: String {

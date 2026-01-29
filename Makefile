@@ -70,7 +70,7 @@ lint: # Run swiftlint
 			exit 0; \
 		fi; \
 		while IFS= read -r -d '' file; do \
-			mise exec -- swiftlint --quiet --path "$$file"; \
+			mise exec -- swiftlint --quiet "$$file"; \
 		done < "$(FILES_FILE)"; \
 	else \
 		mise exec -- swiftlint --quiet; \
@@ -86,7 +86,7 @@ format: # Swift format
 		fi; \
 		xargs -0 swift-format -p --in-place --configuration ./.swift-format.json -- < "$(FILES_FILE)"; \
 		while IFS= read -r -d '' file; do \
-			mise exec -- swiftlint --fix --quiet --path "$$file"; \
+			mise exec -- swiftlint --fix --quiet "$$file"; \
 		done < "$(FILES_FILE)"; \
 	else \
 		swift-format -p --in-place --recursive --configuration ./.swift-format.json supacode supacodeTests; \

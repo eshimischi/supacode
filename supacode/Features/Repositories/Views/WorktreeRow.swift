@@ -29,6 +29,7 @@ struct WorktreeRow: View {
     let pullRequestState = displayPullRequest?.state.uppercased()
     let pullRequestNumber = displayPullRequest?.number
     let pullRequestURL = displayPullRequest.flatMap { URL(string: $0.url) }
+    let pullRequestChecks = displayPullRequest?.statusCheckRollup?.checks ?? []
     let pullRequestBadgeStyle = PullRequestBadgeStyle.style(
       state: pullRequestState,
       number: pullRequestNumber
@@ -76,6 +77,9 @@ struct WorktreeRow: View {
           .foregroundStyle(.green)
           .help("Run script active")
           .accessibilityLabel("Run script active")
+      }
+      if !pullRequestChecks.isEmpty {
+        PullRequestChecksPopoverButton(checks: pullRequestChecks)
       }
       if let pullRequestBadgeStyle {
         pullRequestBadge(

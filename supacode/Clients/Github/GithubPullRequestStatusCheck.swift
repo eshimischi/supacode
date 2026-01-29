@@ -1,9 +1,85 @@
 import Foundation
 
 nonisolated struct GithubPullRequestStatusCheck: Decodable, Equatable, Hashable {
+  let name: String?
+  let detailsUrl: String?
   let status: String?
   let conclusion: String?
   let state: String?
+
+  init(
+    name: String? = nil,
+    detailsUrl: String? = nil,
+    status: String? = nil,
+    conclusion: String? = nil,
+    state: String? = nil
+  ) {
+    self.name = name
+    self.detailsUrl = detailsUrl
+    self.status = status
+    self.conclusion = conclusion
+    self.state = state
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case name
+    case context
+    case detailsUrl
+    case targetUrl
+    case status
+    case conclusion
+    case state
+  }
+
+  nonisolated init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let name = try container.decodeIfPresent(String.self, forKey: .name)
+    let context = try container.decodeIfPresent(String.self, forKey: .context)
+    self.name = name ?? context
+    let detailsUrl = try container.decodeIfPresent(String.self, forKey: .detailsUrl)
+    let targetUrl = try container.decodeIfPresent(String.self, forKey: .targetUrl)
+    self.detailsUrl = detailsUrl ?? targetUrl
+    self.status = try container.decodeIfPresent(String.self, forKey: .status)
+    self.conclusion = try container.decodeIfPresent(String.self, forKey: .conclusion)
+    self.state = try container.decodeIfPresent(String.self, forKey: .state)
+  }
+
+  var checkState: GithubPullRequestCheckState {
+    if let status, status.uppercased() != "COMPLETED" {
+      return .inProgress
+    }
+    if let state {
+      switch state.uppercased() {
+      case "SUCCESS":
+        return .success
+      case "FAILURE", "ERROR":
+        return .failure
+      case "EXPECTED":
+        return .expected
+      case "PENDING":
+        return .inProgress
+      default:
+        return .inProgress
+      }
+    }
+    if let conclusion {
+      switch conclusion.uppercased() {
+      case "SUCCESS", "NEUTRAL":
+        return .success
+      case "CANCELLED", "SKIPPED":
+        return .skipped
+      case "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "STALE":
+        return .failure
+      default:
+        return .inProgress
+      }
+    }
+    return .inProgress
+  }
+
+  var displayName: String {
+    name ?? "Check"
+  }
 }
 
 nonisolated struct GithubPullRequestStatusCheckRollup: Decodable, Equatable, Hashable {
@@ -46,6 +122,29 @@ nonisolated struct PullRequestCheckBreakdown: Equatable {
     passed + failed + inProgress + expected + skipped
   }
 
+  var summaryText: String {
+    var parts: [String] = []
+    if failed > 0 {
+      parts.append("\(failed) failed")
+    }
+    if inProgress > 0 {
+      parts.append("\(inProgress) in progress")
+    }
+    if skipped > 0 {
+      parts.append("\(skipped) skipped")
+    }
+    if expected > 0 {
+      parts.append("\(expected) expected")
+    }
+    if total > 0 {
+      parts.append("\(passed) successful")
+    }
+    if parts.isEmpty {
+      return "Checks unavailable"
+    }
+    return parts.joined(separator: ", ")
+  }
+
   init(checks: [GithubPullRequestStatusCheck]) {
     var passed = 0
     var failed = 0
@@ -53,39 +152,18 @@ nonisolated struct PullRequestCheckBreakdown: Equatable {
     var expected = 0
     var skipped = 0
     for check in checks {
-      if let status = check.status, status.uppercased() != "COMPLETED" {
+      switch check.checkState {
+      case .success:
+        passed += 1
+      case .failure:
+        failed += 1
+      case .inProgress:
         inProgress += 1
-        continue
+      case .expected:
+        expected += 1
+      case .skipped:
+        skipped += 1
       }
-      if let state = check.state {
-        switch state.uppercased() {
-        case "SUCCESS":
-          passed += 1
-        case "FAILURE", "ERROR":
-          failed += 1
-        case "EXPECTED":
-          expected += 1
-        case "PENDING":
-          inProgress += 1
-        default:
-          inProgress += 1
-        }
-        continue
-      }
-      if let conclusion = check.conclusion {
-        switch conclusion.uppercased() {
-        case "SUCCESS", "NEUTRAL":
-          passed += 1
-        case "CANCELLED", "SKIPPED":
-          skipped += 1
-        case "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "STALE":
-          failed += 1
-        default:
-          inProgress += 1
-        }
-        continue
-      }
-      inProgress += 1
     }
     self.passed = passed
     self.failed = failed
