@@ -13,8 +13,10 @@ struct PullRequestChecksPopoverButton: View {
         isPresented.toggle()
       } label: {
         PullRequestChecksRingView(breakdown: breakdown)
+          .padding(4)
       }
       .buttonStyle(.plain)
+      .contentShape(.rect)
       .help("Show pull request checks")
       .accessibilityLabel("Show pull request checks")
       .popover(isPresented: $isPresented) {
