@@ -17,7 +17,7 @@ struct PullRequestChecksPopoverButton<Label: View>: View {
     .help("Show pull request checks")
     .accessibilityLabel("Show pull request checks")
     .popover(isPresented: $isPresented) {
-      PullRequestChecksPopoverView(checks: checks)
+      PullRequestChecksPopoverView(checks: checks, pullRequestURL: pullRequestURL)
     }
   }
 }

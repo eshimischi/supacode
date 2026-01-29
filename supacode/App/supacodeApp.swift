@@ -103,7 +103,7 @@ struct SupacodeApp: App {
     .environment(ghosttyShortcuts)
     .environment(commandKeyObserver)
     .commands {
-      WorktreeCommands(store: store.scope(state: \.repositories, action: \.repositories))
+      WorktreeCommands(store: store)
       SidebarCommands()
       TerminalCommands(ghosttyShortcuts: ghosttyShortcuts)
       UpdateCommands(store: store.scope(state: \.updates, action: \.updates))

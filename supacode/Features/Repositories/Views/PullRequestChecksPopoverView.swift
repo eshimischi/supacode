@@ -2,12 +2,14 @@ import SwiftUI
 
 struct PullRequestChecksPopoverView: View {
   let checks: [GithubPullRequestStatusCheck]
+  let pullRequestURL: URL?
   private let breakdown: PullRequestCheckBreakdown
   private let sortedChecks: [GithubPullRequestStatusCheck]
   @Environment(\.openURL) private var openURL
 
-  init(checks: [GithubPullRequestStatusCheck]) {
+  init(checks: [GithubPullRequestStatusCheck], pullRequestURL: URL?) {
     self.checks = checks
+    self.pullRequestURL = pullRequestURL
     self.breakdown = PullRequestCheckBreakdown(checks: checks)
     self.sortedChecks = checks.sorted {
       let left = Self.sortRank(for: $0.checkState)
@@ -31,6 +33,16 @@ struct PullRequestChecksPopoverView: View {
           .foregroundStyle(.secondary)
       }
       .font(.caption)
+
+      if let pullRequestURL {
+        Button("Open pull request on GitHub") {
+          openURL(pullRequestURL)
+        }
+        .buttonStyle(.plain)
+        .help("Open pull request on GitHub (\(AppShortcuts.openPullRequest.display))")
+        .keyboardShortcut(AppShortcuts.openPullRequest.keyboardShortcut)
+        .font(.caption)
+      }
 
       Divider()
 
