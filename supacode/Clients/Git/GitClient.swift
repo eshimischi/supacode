@@ -238,38 +238,38 @@ struct GitClient {
 
   nonisolated func remoteInfo(for repositoryRoot: URL) async -> GithubRemoteInfo? {
     let path = repositoryRoot.path(percentEncoded: false)
-    if let origin = try? await runGit(
-      operation: .remoteInfo,
-      arguments: ["-C", path, "remote", "get-url", "origin"]
-    ) {
-      if let info = Self.parseGithubRemoteInfo(origin) {
-        return info
-      }
-    }
     guard
-      let remotes = try? await runGit(
+      let remotesOutput = try? await runGit(
         operation: .remoteInfo,
         arguments: ["-C", path, "remote"]
       )
     else {
       return nil
     }
-    guard let firstRemote = remotes
+    let remotes = remotesOutput
       .split(whereSeparator: \.isNewline)
-      .map({ String($0).trimmingCharacters(in: .whitespacesAndNewlines) })
-      .first(where: { !$0.isEmpty })
-    else {
-      return nil
+      .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty }
+    let orderedRemotes: [String]
+    if remotes.contains("origin") {
+      orderedRemotes = ["origin"] + remotes.filter { $0 != "origin" }
+    } else {
+      orderedRemotes = remotes
     }
-    guard
-      let remoteURL = try? await runGit(
-        operation: .remoteInfo,
-        arguments: ["-C", path, "remote", "get-url", firstRemote]
-      )
-    else {
-      return nil
+    for remote in orderedRemotes {
+      guard
+        let remoteURL = try? await runGit(
+          operation: .remoteInfo,
+          arguments: ["-C", path, "remote", "get-url", remote]
+        )
+      else {
+        continue
+      }
+      if let info = Self.parseGithubRemoteInfo(remoteURL) {
+        return info
+      }
     }
-    return Self.parseGithubRemoteInfo(remoteURL)
+    return nil
   }
 
   nonisolated func removeWorktree(_ worktree: Worktree) async throws -> URL {
