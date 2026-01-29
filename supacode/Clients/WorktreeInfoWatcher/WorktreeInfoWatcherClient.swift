@@ -8,6 +8,7 @@ struct WorktreeInfoWatcherClient {
   enum Command: Equatable {
     case setWorktrees([Worktree])
     case setSelectedWorktreeID(Worktree.ID?)
+    case refreshPullRequests
     case stop
   }
 

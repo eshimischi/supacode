@@ -32,6 +32,9 @@ struct ContentView: View {
     .task {
       store.send(.task)
     }
+    .onAppear {
+      store.send(.viewAppeared)
+    }
     .onChange(of: scenePhase) { _, newValue in
       store.send(.scenePhaseChanged(newValue))
     }

@@ -1,6 +1,6 @@
 import Foundation
 
-struct GithubGraphQLPullRequestResponse: Decodable {
+nonisolated struct GithubGraphQLPullRequestResponse: Decodable {
   let data: DataContainer
 
   func pullRequestsByBranch(
@@ -25,11 +25,11 @@ struct GithubGraphQLPullRequestResponse: Decodable {
     return results
   }
 
-  struct DataContainer: Decodable {
+  nonisolated struct DataContainer: Decodable {
     let repository: Repository
   }
 
-  struct Repository: Decodable {
+  nonisolated struct Repository: Decodable {
     let pullRequestsByAlias: [String: PullRequestConnection]
 
     init(from decoder: Decoder) throws {
@@ -42,7 +42,7 @@ struct GithubGraphQLPullRequestResponse: Decodable {
     }
   }
 
-  struct DynamicKey: CodingKey {
+  nonisolated struct DynamicKey: CodingKey {
     let stringValue: String
     let intValue: Int?
 
@@ -57,11 +57,11 @@ struct GithubGraphQLPullRequestResponse: Decodable {
     }
   }
 
-  struct PullRequestConnection: Decodable {
+  nonisolated struct PullRequestConnection: Decodable {
     let nodes: [PullRequestNode]
   }
 
-  struct PullRequestNode: Decodable {
+  nonisolated struct PullRequestNode: Decodable {
     let number: Int
     let title: String
     let state: String
@@ -100,12 +100,12 @@ struct GithubGraphQLPullRequestResponse: Decodable {
     }
   }
 
-  struct HeadRepository: Decodable {
+  nonisolated struct HeadRepository: Decodable {
     let name: String
     let owner: HeadRepositoryOwner
   }
 
-  struct HeadRepositoryOwner: Decodable {
+  nonisolated struct HeadRepositoryOwner: Decodable {
     let login: String
   }
 }
