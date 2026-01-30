@@ -188,7 +188,7 @@ nonisolated private func makeBatchPullRequestsQuery(
     aliasMap[alias] = branch
     let escapedBranch = escapeGraphQLString(branch)
     let selection = """
-    \(alias): pullRequests(first: 5, states: OPEN, headRefName: \"\(escapedBranch)\") {
+    \(alias): pullRequests(first: 5, states: [OPEN, MERGED], headRefName: \"\(escapedBranch)\") {
       nodes {
         number
         title
