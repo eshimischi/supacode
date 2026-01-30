@@ -5,7 +5,6 @@
 //  Created by khoi on 20/1/26.
 //
 
-import AppKit
 import ComposableArchitecture
 import SwiftUI
 import UniformTypeIdentifiers
@@ -58,7 +57,7 @@ struct ContentView: View {
         )
       }
     }
-    .alertWithReturnConfirm(store: repositoriesStore.scope(state: \.$alert, action: \.alert))
+    .alertWithDefaultAction(store: repositoriesStore.scope(state: \.$alert, action: \.alert))
     .alert(store: store.scope(state: \.$alert, action: \.alert))
     .focusedSceneValue(\.toggleLeftSidebarAction, toggleLeftSidebar)
   }
@@ -72,21 +71,20 @@ struct ContentView: View {
 
 @available(macOS 12, *)
 private extension View {
-  func alertWithReturnConfirm<ButtonAction>(
+  func alertWithDefaultAction<ButtonAction>(
     store: Store<PresentationState<AlertState<ButtonAction>>, PresentationAction<ButtonAction>>
   ) -> some View {
-    AlertWithReturnConfirm(content: self, store: store)
+    AlertWithDefaultAction(content: self, store: store)
   }
 }
 
 @available(macOS 12, *)
-private struct AlertWithReturnConfirm<Content: View, ButtonAction>: View {
+private struct AlertWithDefaultAction<Content: View, ButtonAction>: View {
   let content: Content
   @ObservedObject var viewStore: ViewStore<
     PresentationState<AlertState<ButtonAction>>,
     PresentationAction<ButtonAction>
   >
-  @State private var keyMonitor: Any?
 
   init(
     content: Content,
@@ -106,45 +104,19 @@ private struct AlertWithReturnConfirm<Content: View, ButtonAction>: View {
       ),
       presenting: alertState,
       actions: { alertState in
-        ForEach(Array(alertState.buttons.enumerated()), id: \.element.id) { _, button in
-          alertButton(button)
+        ForEach(Array(alertState.buttons.enumerated()), id: \.element.id) { index, button in
+          let actionButton = alertButton(button)
+          if index == 0 {
+            actionButton.keyboardShortcut(.defaultAction)
+          } else {
+            actionButton
+          }
         }
       },
       message: {
         $0.message.map(Text.init)
       }
     )
-    .onAppear {
-      guard keyMonitor == nil else { return }
-      keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-        guard viewStore.state.wrappedValue != nil else { return event }
-        let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
-        guard modifiers.isEmpty else { return event }
-        guard event.keyCode == 36 || event.keyCode == 76 else { return event }
-        guard let button = viewStore.state.wrappedValue?.buttons.first else { return event }
-        switch button.action.type {
-        case let .send(action):
-          if let action {
-            viewStore.send(.presented(action))
-          } else {
-            viewStore.send(.dismiss)
-          }
-        case let .animatedSend(action, animation):
-          if let action {
-            viewStore.send(.presented(action), animation: animation)
-          } else {
-            viewStore.send(.dismiss)
-          }
-        }
-        return nil
-      }
-    }
-    .onDisappear {
-      if let keyMonitor {
-        NSEvent.removeMonitor(keyMonitor)
-        self.keyMonitor = nil
-      }
-    }
   }
 
   @ViewBuilder
