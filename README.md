@@ -2,7 +2,7 @@
 
 A native macOS app that orchestrates multiple coding agents simultaneously, enabling parallel execution of 50+ agents.
 
-![Supacode](.assets/screenshot.png)
+![Supacode](./assets/screenshot.png)
 
 ## Features
 
