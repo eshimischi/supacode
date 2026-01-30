@@ -15,8 +15,19 @@ nonisolated struct GithubGraphQLPullRequestResponse: Decodable {
       guard let branch = aliasMap[alias] else {
         continue
       }
-      if let node = connection.nodes.first(where: {
-        $0.matches(owner: normalizedOwner, repo: normalizedRepo)
+      let candidates = connection.nodes.filter { $0.matches(owner: normalizedOwner, repo: normalizedRepo) }
+      if let node = candidates.max(by: { left, right in
+        let leftRank = left.stateRank
+        let rightRank = right.stateRank
+        if leftRank != rightRank {
+          return leftRank < rightRank
+        }
+        let leftDate = left.updatedAt ?? .distantPast
+        let rightDate = right.updatedAt ?? .distantPast
+        if leftDate != rightDate {
+          return leftDate < rightDate
+        }
+        return left.number < right.number
       }) {
         results[branch] = node.pullRequest
       }
@@ -88,6 +99,17 @@ nonisolated struct GithubGraphQLPullRequestResponse: Decodable {
         headRefName: headRefName,
         statusCheckRollup: statusCheckRollup
       )
+    }
+
+    var stateRank: Int {
+      switch state.uppercased() {
+      case "OPEN":
+        return 2
+      case "MERGED":
+        return 1
+      default:
+        return 0
+      }
     }
 
     func matches(owner: String, repo: String) -> Bool {

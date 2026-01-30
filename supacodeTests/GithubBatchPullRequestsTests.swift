@@ -106,4 +106,120 @@ struct GithubBatchPullRequestsTests {
     )
     #expect(prs["feature-a"] == nil)
   }
+
+  @Test func prefersOpenOverMergedEvenIfOlder() throws {
+    let json = """
+    {
+      "data": {
+        "repository": {
+          "branch0": {
+            "nodes": [
+              {
+                "number": 10,
+                "title": "Merged PR",
+                "state": "MERGED",
+                "additions": 1,
+                "deletions": 0,
+                "isDraft": false,
+                "reviewDecision": null,
+                "updatedAt": "2026-01-02T00:00:00Z",
+                "url": "https://github.com/octo/repo/pull/10",
+                "headRefName": "feature-a",
+                "headRepository": {
+                  "name": "repo",
+                  "owner": { "login": "octo" }
+                }
+              },
+              {
+                "number": 11,
+                "title": "Open PR",
+                "state": "OPEN",
+                "additions": 2,
+                "deletions": 1,
+                "isDraft": false,
+                "reviewDecision": null,
+                "updatedAt": "2026-01-01T00:00:00Z",
+                "url": "https://github.com/octo/repo/pull/11",
+                "headRefName": "feature-a",
+                "headRepository": {
+                  "name": "repo",
+                  "owner": { "login": "octo" }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+    """
+    let data = Data(json.utf8)
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let response = try decoder.decode(GithubGraphQLPullRequestResponse.self, from: data)
+    let prs = response.pullRequestsByBranch(
+      aliasMap: ["branch0": "feature-a"],
+      owner: "octo",
+      repo: "repo"
+    )
+    #expect(prs["feature-a"]?.number == 11)
+    #expect(prs["feature-a"]?.title == "Open PR")
+  }
+
+  @Test func fallsBackToLatestMerged() throws {
+    let json = """
+    {
+      "data": {
+        "repository": {
+          "branch0": {
+            "nodes": [
+              {
+                "number": 20,
+                "title": "Merged Older",
+                "state": "MERGED",
+                "additions": 1,
+                "deletions": 0,
+                "isDraft": false,
+                "reviewDecision": null,
+                "updatedAt": "2026-01-01T00:00:00Z",
+                "url": "https://github.com/octo/repo/pull/20",
+                "headRefName": "feature-a",
+                "headRepository": {
+                  "name": "repo",
+                  "owner": { "login": "octo" }
+                }
+              },
+              {
+                "number": 21,
+                "title": "Merged Newer",
+                "state": "MERGED",
+                "additions": 2,
+                "deletions": 1,
+                "isDraft": false,
+                "reviewDecision": null,
+                "updatedAt": "2026-01-03T00:00:00Z",
+                "url": "https://github.com/octo/repo/pull/21",
+                "headRefName": "feature-a",
+                "headRepository": {
+                  "name": "repo",
+                  "owner": { "login": "octo" }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+    """
+    let data = Data(json.utf8)
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let response = try decoder.decode(GithubGraphQLPullRequestResponse.self, from: data)
+    let prs = response.pullRequestsByBranch(
+      aliasMap: ["branch0": "feature-a"],
+      owner: "octo",
+      repo: "repo"
+    )
+    #expect(prs["feature-a"]?.number == 21)
+    #expect(prs["feature-a"]?.title == "Merged Newer")
+  }
 }
