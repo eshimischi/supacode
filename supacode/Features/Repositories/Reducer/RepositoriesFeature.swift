@@ -335,15 +335,17 @@ struct RepositoriesFeature {
         let pendingID = "pending:\(UUID().uuidString)"
         let repositorySettings = repositorySettingsClient.load(repository.rootURL)
         let selectedBaseRef = repositorySettings.worktreeBaseRef
-        state.pendingWorktrees.append(
-          PendingWorktree(
-            id: pendingID,
-            repositoryID: repository.id,
-            name: "Creating worktree...",
-            detail: ""
+        withAnimation(.easeOut(duration: 0.2)) {
+          state.pendingWorktrees.append(
+            PendingWorktree(
+              id: pendingID,
+              repositoryID: repository.id,
+              name: "Creating worktree...",
+              detail: ""
+            )
           )
-        )
-        state.selectedWorktreeID = pendingID
+          state.selectedWorktreeID = pendingID
+        }
         let existingNames = Set(repository.worktrees.map { $0.name.lowercased() })
         return .run { send in
           do {
@@ -406,13 +408,15 @@ struct RepositoriesFeature {
         let repositoryID,
         let pendingID
       ):
-        state.pendingSetupScriptWorktreeIDs.insert(worktree.id)
-        state.pendingTerminalFocusWorktreeIDs.insert(worktree.id)
-        removePendingWorktree(pendingID, state: &state)
-        if state.selectedWorktreeID == pendingID {
-          state.selectedWorktreeID = worktree.id
+        withAnimation(.easeOut(duration: 0.2)) {
+          state.pendingSetupScriptWorktreeIDs.insert(worktree.id)
+          state.pendingTerminalFocusWorktreeIDs.insert(worktree.id)
+          removePendingWorktree(pendingID, state: &state)
+          if state.selectedWorktreeID == pendingID {
+            state.selectedWorktreeID = worktree.id
+          }
+          insertWorktree(worktree, repositoryID: repositoryID, state: &state)
         }
-        insertWorktree(worktree, repositoryID: repositoryID, state: &state)
         return .merge(
           .send(.reloadRepositories(animated: false)),
           .send(.delegate(.repositoriesChanged(state.repositories))),
@@ -425,8 +429,10 @@ struct RepositoriesFeature {
         let pendingID,
         let previousSelection
       ):
-        removePendingWorktree(pendingID, state: &state)
-        restoreSelection(previousSelection, pendingID: pendingID, state: &state)
+        withAnimation(.easeOut(duration: 0.2)) {
+          removePendingWorktree(pendingID, state: &state)
+          restoreSelection(previousSelection, pendingID: pendingID, state: &state)
+        }
         state.alert = errorAlert(title: title, message: message)
         return .none
 
@@ -545,17 +551,19 @@ struct RepositoriesFeature {
         let previousSelection = state.selectedWorktreeID
         let previousSelectedWorktree = state.worktree(for: previousSelection)
         let wasPinned = state.pinnedWorktreeIDs.contains(worktreeID)
-        state.deletingWorktreeIDs.remove(worktreeID)
-        state.pendingWorktrees.removeAll { $0.id == worktreeID }
-        state.pendingSetupScriptWorktreeIDs.remove(worktreeID)
-        state.pendingTerminalFocusWorktreeIDs.remove(worktreeID)
-        state.worktreeInfoByID.removeValue(forKey: worktreeID)
-        state.pinnedWorktreeIDs.removeAll { $0 == worktreeID }
-        _ = removeWorktree(worktreeID, repositoryID: repositoryID, state: &state)
-        let selectionNeedsUpdate = state.selectedWorktreeID == worktreeID
-        if selectionNeedsUpdate {
-          state.selectedWorktreeID =
-            nextSelection ?? firstAvailableWorktreeID(in: repositoryID, state: state)
+        withAnimation(.easeOut(duration: 0.2)) {
+          state.deletingWorktreeIDs.remove(worktreeID)
+          state.pendingWorktrees.removeAll { $0.id == worktreeID }
+          state.pendingSetupScriptWorktreeIDs.remove(worktreeID)
+          state.pendingTerminalFocusWorktreeIDs.remove(worktreeID)
+          state.worktreeInfoByID.removeValue(forKey: worktreeID)
+          state.pinnedWorktreeIDs.removeAll { $0 == worktreeID }
+          _ = removeWorktree(worktreeID, repositoryID: repositoryID, state: &state)
+          let selectionNeedsUpdate = state.selectedWorktreeID == worktreeID
+          if selectionNeedsUpdate {
+            state.selectedWorktreeID =
+              nextSelection ?? firstAvailableWorktreeID(in: repositoryID, state: state)
+          }
         }
         let roots = state.repositories.map(\.rootURL)
         let repositories = state.repositories
