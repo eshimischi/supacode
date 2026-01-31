@@ -336,13 +336,6 @@ struct GitClient {
       }
   }
 
-  nonisolated private func parseRefLines(_ output: String) -> [String] {
-    output
-      .split(whereSeparator: \.isNewline)
-      .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
-      .filter { !$0.isEmpty }
-  }
-
   nonisolated private func parseLocalRefsWithUpstream(_ output: String) -> [String] {
     output
       .split(whereSeparator: \.isNewline)
