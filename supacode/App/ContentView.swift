@@ -22,13 +22,21 @@ struct ContentView: View {
 
   var body: some View {
     let repositoriesStore = store.scope(state: \.repositories, action: \.repositories)
-    NavigationSplitView(columnVisibility: $leftSidebarVisibility) {
-      SidebarView(store: repositoriesStore, terminalManager: terminalManager)
-        .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
-    } detail: {
-      WorktreeDetailView(store: store, terminalManager: terminalManager)
+    Group {
+      if store.repositories.isInitialLoadComplete {
+        NavigationSplitView(columnVisibility: $leftSidebarVisibility) {
+          SidebarView(store: repositoriesStore, terminalManager: terminalManager)
+            .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
+        } detail: {
+          WorktreeDetailView(store: store, terminalManager: terminalManager)
+        }
+        .navigationSplitViewStyle(.automatic)
+      } else {
+        AppLoadingView()
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .background(.background)
+      }
     }
-    .navigationSplitViewStyle(.automatic)
     .task {
       store.send(.task)
     }

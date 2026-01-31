@@ -134,6 +134,7 @@ struct RepositoriesFeatureTests {
     ) {
       $0.loadFailuresByID = [repository.id: "boom"]
       $0.repositories = []
+      $0.isInitialLoadComplete = true
     }
 
     await store.receive(.delegate(.repositoriesChanged([])))
@@ -160,6 +161,7 @@ struct RepositoriesFeatureTests {
       )
     ) {
       $0.repositories = [updatedRepository]
+      $0.isInitialLoadComplete = true
     }
     await store.receive(.delegate(.repositoriesChanged([updatedRepository])))
     await store.receive(.delegate(.selectedWorktreeChanged(updatedWorktree)))
@@ -219,7 +221,9 @@ struct RepositoriesFeatureTests {
         roots: [repository.rootURL],
         animated: true
       )
-    )
+    ) {
+      $0.isInitialLoadComplete = true
+    }
     await store.receive(.delegate(.repositoriesChanged([updatedRepository])))
   }
 
@@ -260,7 +264,9 @@ struct RepositoriesFeatureTests {
         roots: [repository.rootURL],
         animated: true
       )
-    )
+    ) {
+      $0.isInitialLoadComplete = true
+    }
     await store.receive(.delegate(.repositoriesChanged([updatedRepository])))
   }
 
@@ -311,7 +317,9 @@ struct RepositoriesFeatureTests {
         roots: [repository.rootURL],
         animated: false
       )
-    )
+    ) {
+      $0.isInitialLoadComplete = true
+    }
     await store.receive(.delegate(.repositoriesChanged([updatedRepository])))
   }
 

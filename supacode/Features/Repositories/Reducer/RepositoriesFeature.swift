@@ -16,6 +16,7 @@ struct RepositoriesFeature {
     var selectedWorktreeID: Worktree.ID?
     var worktreeInfoByID: [Worktree.ID: WorktreeInfoEntry] = [:]
     var isOpenPanelPresented = false
+    var isInitialLoadComplete = false
     var pendingWorktrees: [PendingWorktree] = []
     var pendingSetupScriptWorktreeIDs: Set<Worktree.ID> = []
     var pendingTerminalFocusWorktreeIDs: Set<Worktree.ID> = []
@@ -172,6 +173,7 @@ struct RepositoriesFeature {
           animated: animated
         )
         state.repositoryRoots = roots
+        state.isInitialLoadComplete = true
         state.loadFailuresByID = Dictionary(
           uniqueKeysWithValues: failures.map { ($0.rootID, $0.message) }
         )
@@ -235,6 +237,7 @@ struct RepositoriesFeature {
           animated: false
         )
         state.repositoryRoots = roots
+        state.isInitialLoadComplete = true
         state.loadFailuresByID = Dictionary(
           uniqueKeysWithValues: failures.map { ($0.rootID, $0.message) }
         )

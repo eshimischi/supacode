@@ -35,6 +35,7 @@ struct RepositoriesFeaturePersistenceTests {
       $0.repositories = []
       $0.pinnedWorktreeIDs = []
       $0.shouldRestoreLastFocusedWorktree = false
+      $0.isInitialLoadComplete = true
     }
     await store.receive(.delegate(.repositoriesChanged([])))
     await store.finish()
