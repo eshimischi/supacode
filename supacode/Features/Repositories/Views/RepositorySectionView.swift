@@ -23,10 +23,12 @@ struct RepositorySectionView: View {
       )
     } header: {
       let toggleExpanded = {
-        if expandedRepoIDs.contains(repository.id) {
-          expandedRepoIDs.remove(repository.id)
-        } else {
-          expandedRepoIDs.insert(repository.id)
+        withAnimation(.easeOut(duration: 0.2)) {
+          if expandedRepoIDs.contains(repository.id) {
+            expandedRepoIDs.remove(repository.id)
+          } else {
+            expandedRepoIDs.insert(repository.id)
+          }
         }
       }
       HStack {
