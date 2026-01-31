@@ -7,11 +7,7 @@ struct GithubIntegrationClient {
 extension GithubIntegrationClient: DependencyKey {
   static let liveValue = GithubIntegrationClient(
     isAvailable: {
-      @Dependency(\.settingsClient) var settingsClient
-      @Dependency(\.githubCLI) var githubCLI
-      let settings = await settingsClient.load()
-      guard settings.githubIntegrationEnabled else { return false }
-      return await githubCLI.isAvailable()
+      await githubIntegrationIsAvailable()
     }
   )
   static let testValue = GithubIntegrationClient(
@@ -24,4 +20,13 @@ extension DependencyValues {
     get { self[GithubIntegrationClient.self] }
     set { self[GithubIntegrationClient.self] = newValue }
   }
+}
+
+@MainActor
+private func githubIntegrationIsAvailable() async -> Bool {
+  @Dependency(SettingsClient.self) var settingsClient
+  @Dependency(GithubCLIClient.self) var githubCLI
+  let settings = await settingsClient.load()
+  guard settings.githubIntegrationEnabled else { return false }
+  return await githubCLI.isAvailable()
 }
