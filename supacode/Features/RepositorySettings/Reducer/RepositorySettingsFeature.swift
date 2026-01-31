@@ -9,6 +9,7 @@ struct RepositorySettingsFeature {
     var settings: RepositorySettings
     var branchOptions: [String] = []
     var defaultWorktreeBaseRef = "origin/main"
+    var isBranchDataLoaded = false
   }
 
   enum Action: Equatable {
@@ -69,6 +70,7 @@ struct RepositorySettingsFeature {
           options.append(selected)
         }
         state.branchOptions = options
+        state.isBranchDataLoaded = true
         return .none
 
       case .setSetupScript(let script):

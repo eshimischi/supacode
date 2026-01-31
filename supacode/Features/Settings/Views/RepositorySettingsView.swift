@@ -9,23 +9,28 @@ struct RepositorySettingsView: View {
       store.branchOptions.isEmpty ? [store.defaultWorktreeBaseRef] : store.branchOptions
     Form {
       Section {
-        Picker(
-          "Branch new workspaces from",
-          selection: Binding(
-            get: {
-              (store.settings.worktreeBaseRef ?? "").isEmpty
-                ? store.defaultWorktreeBaseRef
-                : store.settings.worktreeBaseRef ?? store.defaultWorktreeBaseRef
-            },
-            set: { store.send(.setWorktreeBaseRef($0)) }
-          )
-        ) {
-          ForEach(baseRefOptions, id: \.self) { ref in
-            Text(ref)
-              .tag(ref)
+        if store.isBranchDataLoaded {
+          Picker(
+            "Branch new workspaces from",
+            selection: Binding(
+              get: {
+                (store.settings.worktreeBaseRef ?? "").isEmpty
+                  ? store.defaultWorktreeBaseRef
+                  : store.settings.worktreeBaseRef ?? store.defaultWorktreeBaseRef
+              },
+              set: { store.send(.setWorktreeBaseRef($0)) }
+            )
+          ) {
+            ForEach(baseRefOptions, id: \.self) { ref in
+              Text(ref)
+                .tag(ref)
+            }
           }
+          .labelsHidden()
+        } else {
+          ProgressView()
+            .controlSize(.small)
         }
-        .labelsHidden()
       } header: {
         VStack(alignment: .leading, spacing: 4) {
           Text("Branch new workspaces from")
