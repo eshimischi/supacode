@@ -55,6 +55,7 @@ struct WorktreeRowsView: View {
         shortcutHint: shortcutHint
       )
       .tag(SidebarSelection.worktree(row.id))
+      .listRowInsets(EdgeInsets())
       .contextMenu {
         if !row.isMainWorktree {
           if row.isPinned {
@@ -92,6 +93,7 @@ struct WorktreeRowsView: View {
         shortcutHint: shortcutHint
       )
       .tag(SidebarSelection.worktree(row.id))
+      .listRowInsets(EdgeInsets())
       .disabled(isRepositoryRemoving)
     }
   }

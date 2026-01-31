@@ -56,7 +56,6 @@ struct RepositorySectionView: View {
         } label: {
           Label("Repository options", systemImage: "ellipsis")
             .labelStyle(.iconOnly)
-            .padding(.vertical, 6)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -68,12 +67,10 @@ struct RepositorySectionView: View {
         } label: {
           Label("New Worktree", systemImage: "plus")
             .labelStyle(.iconOnly)
-            .padding(.vertical, 6)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
-        .padding(.trailing, 6)
         .help("New Worktree (\(AppShortcuts.newWorktree.display))")
         .disabled(isRemovingRepository)
       }
@@ -94,8 +91,7 @@ struct RepositorySectionView: View {
         .help("Remove repository ")
         .disabled(isRemovingRepository)
       }
-      .padding()
-      .padding(.bottom, isExpanded ? 6 : 0)
+      .listRowInsets(EdgeInsets())
     }
   }
 }
