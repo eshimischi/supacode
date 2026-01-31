@@ -771,11 +771,9 @@ final class GhosttySurfaceView: NSView, Identifiable {
       composing: composing
     )
     let finalText = text ?? ghosttyCharacters(resolvedEvent)
-    if let finalText, !finalText.isEmpty {
-      if text == nil, let codepoint = finalText.utf8.first, codepoint < 0x20 {
-        key.text = nil
-        return ghostty_surface_key(surface, key)
-      }
+    if let finalText, !finalText.isEmpty,
+      let codepoint = finalText.utf8.first, codepoint >= 0x20
+    {
       return finalText.withCString { ptr in
         key.text = ptr
         return ghostty_surface_key(surface, key)
