@@ -23,9 +23,7 @@ struct WorktreeDetailView: View {
       pullRequest = nil
     }
     let openActionSelection = state.openActionSelection
-    let runScriptEnabled =
-      hasActiveWorktree
-      && !state.selectedRunScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    let runScriptEnabled = hasActiveWorktree
     let runScriptIsRunning = selectedWorktree.flatMap { state.runScriptStatusByWorktreeID[$0.id] } == true
     let content = Group {
       if let loadingInfo {
@@ -153,10 +151,7 @@ struct WorktreeDetailView: View {
     let runScriptIsRunning: Bool
 
     var runScriptHelpText: String {
-      if runScriptEnabled {
-        return "Run Script (\(AppShortcuts.runScript.display))"
-      }
-      return "Run Script (\(AppShortcuts.runScript.display)) — Set Run Script in repo settings"
+      "Run Script (\(AppShortcuts.runScript.display))"
     }
 
     var stopRunScriptHelpText: String {
