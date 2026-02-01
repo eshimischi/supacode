@@ -9,8 +9,8 @@ import AppKit
 import ComposableArchitecture
 import Foundation
 import GhosttyKit
-import Sentry
 import PostHog
+import Sentry
 import SwiftUI
 
 private enum GhosttyCLI {

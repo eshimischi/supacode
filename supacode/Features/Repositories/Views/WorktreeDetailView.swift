@@ -27,10 +27,6 @@ struct WorktreeDetailView: View {
       hasActiveWorktree
       && !state.selectedRunScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     let runScriptIsRunning = selectedWorktree.flatMap { state.runScriptStatusByWorktreeID[$0.id] } == true
-    let navigationTitle =
-      hasActiveWorktree
-      ? ""
-      : (selectedWorktree?.name ?? loadingInfo?.name ?? "Supacode")
     let content = Group {
       if let loadingInfo {
         WorktreeLoadingView(info: loadingInfo)
@@ -58,7 +54,7 @@ struct WorktreeDetailView: View {
         EmptyStateView(store: store.scope(state: \.repositories, action: \.repositories))
       }
     }
-    .navigationTitle(navigationTitle)
+    .toolbar(removing: .title)
     .toolbar {
       if hasActiveWorktree, let selectedWorktree {
         let toolbarState = WorktreeToolbarState(
@@ -177,85 +173,95 @@ struct WorktreeDetailView: View {
     let onStopRunScript: () -> Void
 
     var body: some ToolbarContent {
-      ToolbarItem(placement: .navigation) {
+      ToolbarItem {
         WorktreeDetailTitleView(
           branchName: toolbarState.branchName,
           onSubmit: onRenameBranch
         )
       }
-      ToolbarItem(placement: .principal) {
-        HStack {
-          if let model = PullRequestStatusModel(pullRequest: toolbarState.pullRequest) {
-            PullRequestStatusButton(model: model).padding(.horizontal)
-          } else {
-            MiddleStatusView().padding(.horizontal)
-          }
-          Divider()
-          RunScriptToolbarButton(
-            isRunning: toolbarState.runScriptIsRunning,
-            isEnabled: toolbarState.runScriptEnabled,
-            runHelpText: toolbarState.runScriptHelpText,
-            stopHelpText: toolbarState.stopRunScriptHelpText,
-            runShortcut: AppShortcuts.runScript.display,
-            stopShortcut: AppShortcuts.stopRunScript.display,
-            runAction: onRunScript,
-            stopAction: onStopRunScript
-          )
+
+      ToolbarSpacer(.flexible)
+
+      ToolbarItemGroup {
+        if let model = PullRequestStatusModel(pullRequest: toolbarState.pullRequest) {
+          PullRequestStatusButton(model: model).padding(.horizontal)
+        } else {
+          MiddleStatusView().padding(.horizontal)
         }
+
       }
-      ToolbarItem(placement: .automatic) {
+      ToolbarSpacer(.fixed)
+
+      ToolbarSpacer(.flexible)
+
+      ToolbarItem {
+
         openMenu(
           openActionSelection: toolbarState.openActionSelection,
           showExtras: toolbarState.showExtras
         )
       }
+      ToolbarSpacer(.fixed)
+
+      ToolbarItem {
+        RunScriptToolbarButton(
+          isRunning: toolbarState.runScriptIsRunning,
+          isEnabled: toolbarState.runScriptEnabled,
+          runHelpText: toolbarState.runScriptHelpText,
+          stopHelpText: toolbarState.stopRunScriptHelpText,
+          runShortcut: AppShortcuts.runScript.display,
+          stopShortcut: AppShortcuts.stopRunScript.display,
+          runAction: onRunScript,
+          stopAction: onStopRunScript
+        )
+      }
+
     }
 
     @ViewBuilder
     private func openMenu(openActionSelection: OpenWorktreeAction, showExtras: Bool) -> some View {
       let availableActions = OpenWorktreeAction.availableCases
       let resolvedOpenActionSelection = OpenWorktreeAction.availableSelection(openActionSelection)
-      HStack(spacing: 0) {
-        Button {
-          onOpenWorktree(resolvedOpenActionSelection)
-        } label: {
-          OpenWorktreeActionMenuLabelView(
-            action: resolvedOpenActionSelection,
-            shortcutHint: showExtras ? AppShortcuts.openFinder.display : nil
-          )
-        }
-        .buttonStyle(.borderless)
-        .padding(8)
-        .help(openActionHelpText(for: resolvedOpenActionSelection, isDefault: true))
-
-        Divider()
-          .frame(height: 16)
-
-        Menu {
-          ForEach(availableActions) { action in
-            let isDefault = action == resolvedOpenActionSelection
-            Button {
-              onOpenActionSelectionChanged(action)
-              onOpenWorktree(action)
-            } label: {
-              OpenWorktreeActionMenuLabelView(action: action, shortcutHint: nil)
-            }
-            .buttonStyle(.plain)
-            .help(openActionHelpText(for: action, isDefault: isDefault))
-          }
-        } label: {
-          Image(systemName: "chevron.down")
-            .font(.system(size: 8))
-            .monospaced()
-            .accessibilityLabel("Open in menu")
-        }
-        .buttonStyle(.borderless)
-        .padding(8)
-        .imageScale(.small)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .help("Open in...")
+      Button {
+        onOpenWorktree(resolvedOpenActionSelection)
+      } label: {
+        OpenWorktreeActionMenuLabelView(
+          action: resolvedOpenActionSelection,
+          shortcutHint: showExtras ? AppShortcuts.openFinder.display : nil
+        )
       }
+      .buttonStyle(.borderless)
+      .padding(8)
+      .help(openActionHelpText(for: resolvedOpenActionSelection, isDefault: true))
+
+      Divider()
+        .frame(height: 16)
+
+      Menu {
+        ForEach(availableActions) { action in
+          let isDefault = action == resolvedOpenActionSelection
+          Button {
+            onOpenActionSelectionChanged(action)
+            onOpenWorktree(action)
+          } label: {
+            OpenWorktreeActionMenuLabelView(action: action, shortcutHint: nil)
+          }
+          .buttonStyle(.plain)
+          .help(openActionHelpText(for: action, isDefault: isDefault))
+        }
+      } label: {
+        Image(systemName: "chevron.down")
+          .font(.system(size: 8))
+          .monospaced()
+          .accessibilityLabel("Open in menu")
+      }
+      .buttonStyle(.borderless)
+      .padding(8)
+      .imageScale(.small)
+      .menuIndicator(.hidden)
+      .fixedSize()
+      .help("Open in...")
+
     }
 
     private func openActionHelpText(for action: OpenWorktreeAction, isDefault: Bool) -> String {
@@ -332,18 +338,17 @@ private struct RunScriptToolbarButton: View {
       HStack(spacing: 6) {
         Image(systemName: config.systemImage)
           .accessibilityHidden(true)
+        Text(config.title)
+
         if commandKeyObserver.isPressed {
-          ShortcutHintView(text: config.shortcut, color: .secondary)
-        } else {
-          Text(config.title)
+          Text(config.shortcut)
+            .monospaced()
+            .foregroundStyle(.secondary)
         }
       }
     }
     .font(.caption)
     .monospaced()
-    .padding(.horizontal, 10)
-    .padding(.vertical, 6)
-    .buttonStyle(.plain)
     .help(config.helpText)
     .disabled(!config.isEnabled)
   }
