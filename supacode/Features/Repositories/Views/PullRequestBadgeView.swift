@@ -1,8 +1,8 @@
 import SwiftUI
 
 enum PullRequestBadgeStyle {
-  static let mergedColor = Color(red: 137.0 / 255.0, green: 87.0 / 255.0, blue: 229.0 / 255.0)
-  static let openColor = Color(red: 35.0 / 255.0, green: 134.0 / 255.0, blue: 54.0 / 255.0)
+  static let mergedColor = Color.purple
+  static let openColor = Color.green
 
   static func style(state: String?, number: Int?) -> (text: String, color: Color)? {
     guard let state = state?.uppercased() else {
