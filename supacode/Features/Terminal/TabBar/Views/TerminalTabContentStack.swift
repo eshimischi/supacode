@@ -21,6 +21,7 @@ struct TerminalTabContentStack<Content: View>: View {
         content(tab.id)
           .frame(maxWidth: .infinity, maxHeight: .infinity)
           .opacity(tab.id == selectedTabId ? 1 : 0)
+          .zIndex(tab.id == selectedTabId ? 1 : 0)
           .allowsHitTesting(tab.id == selectedTabId)
       }
     }
