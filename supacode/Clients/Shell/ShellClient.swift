@@ -21,6 +21,7 @@ extension ShellClient: DependencyKey {
       let execCommand = shellExecCommand(for: shellURL)
       let shellArguments =
         ["-l", "-c", execCommand, "--", executableURL.path(percentEncoded: false)] + arguments
+      print("[Shell] runLogin: \(shellURL.path) \(shellArguments.joined(separator: " "))")
       return try await runProcess(
         executableURL: shellURL,
         arguments: shellArguments,
@@ -88,6 +89,7 @@ nonisolated private func shellExecCommand(for shellURL: URL) -> String {
 
 nonisolated private func defaultShellPath() -> String {
   if let env = ProcessInfo.processInfo.environment["SHELL"], !env.isEmpty {
+    print("[Shell] Using SHELL env: \(env)")
     return env
   }
 
@@ -100,9 +102,11 @@ nonisolated private func defaultShellPath() -> String {
   if lookup == 0, let result, let shell = result.pointee.pw_shell {
     let value = String(cString: shell)
     if !value.isEmpty {
+      print("[Shell] Using passwd shell: \(value)")
       return value
     }
   }
 
+  print("[Shell] Using fallback: /bin/zsh")
   return "/bin/zsh"
 }
