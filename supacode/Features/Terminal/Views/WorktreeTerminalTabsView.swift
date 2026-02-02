@@ -37,6 +37,11 @@ struct WorktreeTerminalTabsView: View {
         EmptyTerminalPaneView(message: "No terminals open")
       }
     }
+    .background(
+      WindowFocusObserverView { isKey in
+        state.syncFocus(windowIsKey: isKey)
+      }
+    )
     .onAppear {
       state.ensureInitialTab(focusing: false)
       if shouldAutoFocusTerminal {
@@ -47,6 +52,7 @@ struct WorktreeTerminalTabsView: View {
       if shouldAutoFocusTerminal {
         state.focusSelectedTab()
       }
+      state.syncFocus(windowIsKey: NSApp.keyWindow?.isKeyWindow ?? false)
     }
   }
 

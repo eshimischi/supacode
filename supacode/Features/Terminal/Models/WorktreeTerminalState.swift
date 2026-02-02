@@ -139,6 +139,18 @@ final class WorktreeTerminalState {
     focusSurface(in: tabId)
   }
 
+  func syncFocus(windowIsKey: Bool) {
+    let selectedTabId = tabManager.selectedTabId
+    for (tabId, tree) in trees {
+      let focusedId = focusedSurfaceIdByTab[tabId]
+      let shouldFocusTab = windowIsKey && tabId == selectedTabId
+      for surface in tree.leaves() {
+        let isFocused = shouldFocusTab && surface.id == focusedId
+        surface.focusDidChange(isFocused)
+      }
+    }
+  }
+
   @discardableResult
   func focusSurface(id: UUID) -> Bool {
     guard let tabId = tabId(containing: id),

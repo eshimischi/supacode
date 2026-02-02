@@ -189,15 +189,21 @@ final class GhosttySurfaceView: NSView, Identifiable {
     addCursorRect(bounds, cursor: currentCursor)
   }
 
+  func focusDidChange(_ focused: Bool) {
+    guard surface != nil else { return }
+    guard self.focused != focused else { return }
+    self.focused = focused
+    setSurfaceFocus(focused)
+    onFocusChange?(focused)
+    if passwordInput {
+      SecureInput.shared.setScoped(ObjectIdentifier(self), focused: focused)
+    }
+  }
+
   override func becomeFirstResponder() -> Bool {
     let result = super.becomeFirstResponder()
     if result {
-      focused = true
-      setSurfaceFocus(true)
-      onFocusChange?(true)
-      if passwordInput {
-        SecureInput.shared.setScoped(ObjectIdentifier(self), focused: true)
-      }
+      focusDidChange(true)
     }
     return result
   }
@@ -205,12 +211,7 @@ final class GhosttySurfaceView: NSView, Identifiable {
   override func resignFirstResponder() -> Bool {
     let result = super.resignFirstResponder()
     if result {
-      focused = false
-      setSurfaceFocus(false)
-      onFocusChange?(false)
-      if passwordInput {
-        SecureInput.shared.setScoped(ObjectIdentifier(self), focused: false)
-      }
+      focusDidChange(false)
     }
     return result
   }
@@ -1018,15 +1019,23 @@ extension GhosttySurfaceView {
 
   override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
     let pasteboard = sender.draggingPasteboard
-
-    guard let content = pasteboard.getOpinionatedStringContents(), !content.isEmpty else {
-      return false
+    let content: String?
+    if let url = pasteboard.string(forType: .URL) {
+      content = NSPasteboard.ghosttyEscape(url)
+    } else if let urls = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL],
+      !urls.isEmpty
+    {
+      content = urls.map { NSPasteboard.ghosttyEscape($0.path) }.joined(separator: " ")
+    } else if let str = pasteboard.string(forType: .string) {
+      content = str
+    } else {
+      content = nil
     }
 
-    let selectionPasteboard = NSPasteboard.ghosttySelection
-    selectionPasteboard.clearContents()
-    selectionPasteboard.setString(content, forType: .string)
-    performBindingAction("paste_from_selection")
+    guard let content else { return false }
+    Task { @MainActor in
+      self.insertText(content, replacementRange: NSRange(location: 0, length: 0))
+    }
     return true
   }
 }
