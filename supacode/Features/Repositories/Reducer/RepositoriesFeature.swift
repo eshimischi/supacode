@@ -294,6 +294,7 @@ struct RepositoriesFeature {
         if trimmed == worktree.name {
           return .none
         }
+        analyticsClient.capture("branch_renamed", nil)
         return .run { send in
           do {
             try await gitClient.renameBranch(worktree.workingDirectory, trimmed)

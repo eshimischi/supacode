@@ -1,3 +1,4 @@
+import PostHog
 import SwiftUI
 
 struct PullRequestChecksPopoverView: View {
@@ -7,6 +8,12 @@ struct PullRequestChecksPopoverView: View {
   private let breakdown: PullRequestCheckBreakdown
   private let sortedChecks: [GithubPullRequestStatusCheck]
   @Environment(\.openURL) private var openURL
+
+  private func capture(_ event: String) {
+    #if !DEBUG
+      PostHogSDK.shared.capture(event)
+    #endif
+  }
 
   init(checks: [GithubPullRequestStatusCheck], pullRequestURL: URL?, pullRequestTitle: String?) {
     self.checks = checks
@@ -28,6 +35,7 @@ struct PullRequestChecksPopoverView: View {
       VStack(alignment: .leading) {
         if let pullRequestURL {
           Button {
+            capture("github_pr_opened")
             openURL(pullRequestURL)
           } label: {
             Text("\(pullRequestTitle ?? "Open pull request on GitHub") ↗")
@@ -59,6 +67,7 @@ struct PullRequestChecksPopoverView: View {
                   .accessibilityHidden(true)
                 if let url = check.detailsUrl.flatMap(URL.init(string:)) {
                   Button {
+                    capture("github_ci_check_opened")
                     openURL(url)
                   } label: {
                     Text(check.displayName)

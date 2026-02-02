@@ -271,6 +271,7 @@ struct AppFeature {
 
       case .requestQuit:
         guard state.settings.confirmBeforeQuit else {
+          analyticsClient.capture("app_quit", nil)
           return .run { @MainActor _ in
             NSApplication.shared.terminate(nil)
           }
@@ -340,6 +341,7 @@ struct AppFeature {
         guard let worktree = state.repositories.worktree(for: state.repositories.selectedWorktreeID) else {
           return .none
         }
+        analyticsClient.capture("terminal_tab_closed", nil)
         return .run { _ in
           await terminalClient.send(.closeFocusedTab(worktree))
         }
@@ -418,6 +420,7 @@ struct AppFeature {
         return .none
 
       case .alert(.presented(.confirmQuit)):
+        analyticsClient.capture("app_quit", nil)
         state.alert = nil
         return .run { @MainActor _ in
           NSApplication.shared.terminate(nil)
