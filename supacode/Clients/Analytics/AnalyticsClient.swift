@@ -3,6 +3,7 @@ import PostHog
 
 struct AnalyticsClient {
   var capture: @Sendable (_ event: String, _ properties: [String: Any]?) -> Void
+  var identify: @Sendable (_ distinctId: String) -> Void
 }
 
 extension AnalyticsClient: DependencyKey {
@@ -11,11 +12,17 @@ extension AnalyticsClient: DependencyKey {
       #if !DEBUG
         PostHogSDK.shared.capture(event, properties: properties)
       #endif
+    },
+    identify: { distinctId in
+      #if !DEBUG
+        PostHogSDK.shared.identify(distinctId)
+      #endif
     }
   )
 
   static let testValue = AnalyticsClient(
-    capture: { _, _ in }
+    capture: { _, _ in },
+    identify: { _ in }
   )
 }
 

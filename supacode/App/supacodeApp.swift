@@ -67,6 +67,9 @@ struct SupacodeApp: App {
       let posthogHost = "https://us.i.posthog.com"
       let config = PostHogConfig(apiKey: posthogAPIKey, host: posthogHost)
       PostHogSDK.shared.setup(config)
+      if let hardwareUUID = HardwareInfo.uuid {
+        PostHogSDK.shared.identify(hardwareUUID)
+      }
     #endif
     if let resourceURL = Bundle.main.resourceURL?.appendingPathComponent("ghostty") {
       setenv("GHOSTTY_RESOURCES_DIR", resourceURL.path, 1)
