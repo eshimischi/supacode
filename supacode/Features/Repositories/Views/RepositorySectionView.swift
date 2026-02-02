@@ -32,13 +32,20 @@ struct RepositorySectionView: View {
         }
       }
       HStack {
-        RepoHeaderRow(
-          name: repository.name,
-          initials: repository.initials,
-          isExpanded: isExpanded,
-          isRemoving: isRemovingRepository
-        )
-        Spacer()
+        Button {
+          toggleExpanded()
+        } label: {
+          RepoHeaderRow(
+            name: repository.name,
+            initials: repository.initials,
+            isExpanded: isExpanded,
+            isRemoving: isRemovingRepository
+          )
+          .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .contentShape(.rect)
+        .disabled(isRemovingRepository)
         if isRemovingRepository {
           ProgressView()
             .controlSize(.small)
@@ -75,12 +82,6 @@ struct RepositorySectionView: View {
         .help("New Worktree (\(AppShortcuts.newWorktree.display))")
         .disabled(isRemovingRepository)
       }
-      .contentShape(Rectangle())
-      .onTapGesture {
-        toggleExpanded()
-      }
-      .accessibilityAddTraits(.isButton)
-      .disabled(isRemovingRepository)
       .contextMenu {
         Button("Repo Settings") {
           openRepoSettings()

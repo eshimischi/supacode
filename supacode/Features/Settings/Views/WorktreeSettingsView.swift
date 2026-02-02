@@ -11,10 +11,7 @@ struct WorktreeSettingsView: View {
           VStack(alignment: .leading) {
             Toggle(
               "Delete branch on archive",
-              isOn: Binding(
-                get: { store.deleteBranchOnArchive },
-                set: { store.send(.setDeleteBranchOnArchive($0)) }
-              )
+              isOn: $store.deleteBranchOnArchive
             )
             .help("Delete the local branch when archiving a worktree")
             Text("Delete the local branch when archiving a worktree.")

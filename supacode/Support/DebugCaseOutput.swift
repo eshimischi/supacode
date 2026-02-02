@@ -73,43 +73,27 @@ private func typeName(
   genericsAbbreviated: Bool = true
 ) -> String {
   var name = _typeName(type, qualified: qualified)
-    .replacingOccurrences(
-      of: #"\(unknown context at \$[[:xdigit:]]+\)\."#,
-      with: "",
-      options: .regularExpression
-    )
+    .replacing(#/\(unknown context at \$[0-9A-Fa-f]+\)\./#, with: "")
   for _ in 1...10 {
     let abbreviated =
       name
-      .replacingOccurrences(
-        of: #"\bSwift.Optional<([^><]+)>"#,
-        with: "$1?",
-        options: .regularExpression
-      )
-      .replacingOccurrences(
-        of: #"\bSwift.Array<([^><]+)>"#,
-        with: "[$1]",
-        options: .regularExpression
-      )
-      .replacingOccurrences(
-        of: #"\bSwift.Dictionary<([^,<]+), ([^><]+)>"#,
-        with: "[$1: $2]",
-        options: .regularExpression
-      )
+      .replacing(#/\bSwift\.Optional<([^><]+)>/#) { match in
+        "\(match.1)?"
+      }
+      .replacing(#/\bSwift\.Array<([^><]+)>/#) { match in
+        "[\(match.1)]"
+      }
+      .replacing(#/\bSwift\.Dictionary<([^,<]+), ([^><]+)>/#) { match in
+        "[\(match.1): \(match.2)]"
+      }
     if abbreviated == name { break }
     name = abbreviated
   }
-  name = name.replacingOccurrences(
-    of: #"\w+\.([\w.]+)"#,
-    with: "$1",
-    options: .regularExpression
-  )
+  name = name.replacing(#/\w+\.([\w.]+)/#) { match in
+    "\(match.1)"
+  }
   if genericsAbbreviated {
-    name = name.replacingOccurrences(
-      of: #"<.+>"#,
-      with: "",
-      options: .regularExpression
-    )
+    name = name.replacing(#/<.+>/#, with: "")
   }
   return name
 }

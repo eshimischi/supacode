@@ -7,23 +7,19 @@ struct RepositorySettingsView: View {
   var body: some View {
     let baseRefOptions =
       store.branchOptions.isEmpty ? [store.defaultWorktreeBaseRef] : store.branchOptions
+    let settings = $store.settings
     Form {
       Section {
         if store.isBranchDataLoaded {
           Picker(
             "Branch new workspaces from",
-            selection: Binding(
-              get: {
-                (store.settings.worktreeBaseRef ?? "").isEmpty
-                  ? store.defaultWorktreeBaseRef
-                  : store.settings.worktreeBaseRef ?? store.defaultWorktreeBaseRef
-              },
-              set: { store.send(.setWorktreeBaseRef($0)) }
-            )
+            selection: $store.settings.worktreeBaseRef
           ) {
+            Text("Automatic (\(store.defaultWorktreeBaseRef))")
+              .tag(String?.none)
             ForEach(baseRefOptions, id: \.self) { ref in
               Text(ref)
-                .tag(ref)
+                .tag(Optional(ref))
             }
           }
           .labelsHidden()
@@ -41,18 +37,12 @@ struct RepositorySettingsView: View {
       Section {
         Toggle(
           "Copy ignored files to new worktrees",
-          isOn: Binding(
-            get: { store.settings.copyIgnoredOnWorktreeCreate },
-            set: { store.send(.setCopyIgnoredOnWorktreeCreate($0)) }
-          )
+          isOn: settings.copyIgnoredOnWorktreeCreate
         )
         .disabled(store.isBareRepository)
         Toggle(
           "Copy untracked files to new worktrees",
-          isOn: Binding(
-            get: { store.settings.copyUntrackedOnWorktreeCreate },
-            set: { store.send(.setCopyUntrackedOnWorktreeCreate($0)) }
-          )
+          isOn: settings.copyUntrackedOnWorktreeCreate
         )
         .disabled(store.isBareRepository)
         if store.isBareRepository {
@@ -69,10 +59,7 @@ struct RepositorySettingsView: View {
       Section {
         ZStack(alignment: .topLeading) {
           TextEditor(
-            text: Binding(
-              get: { store.settings.setupScript },
-              set: { store.send(.setSetupScript($0)) }
-            )
+            text: settings.setupScript
           )
           .font(.body)
           .monospaced()
@@ -96,10 +83,7 @@ struct RepositorySettingsView: View {
       Section {
         ZStack(alignment: .topLeading) {
           TextEditor(
-            text: Binding(
-              get: { store.settings.runScript },
-              set: { store.send(.setRunScript($0)) }
-            )
+            text: settings.runScript
           )
           .font(.body)
           .monospaced()

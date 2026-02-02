@@ -9,12 +9,13 @@ struct AppearanceSettingsView: View {
       Form {
         Section("Appearance") {
           HStack {
+            let appearanceMode = $store.appearanceMode
             ForEach(AppearanceMode.allCases) { mode in
               AppearanceOptionCardView(
                 mode: mode,
-                isSelected: mode == store.appearanceMode
+                isSelected: mode == appearanceMode.wrappedValue
               ) {
-                store.send(.setAppearanceMode(mode))
+                appearanceMode.wrappedValue = mode
               }
             }
           }
@@ -22,10 +23,7 @@ struct AppearanceSettingsView: View {
         Section("Quit") {
           Toggle(
             "Confirm before quitting",
-            isOn: Binding(
-              get: { store.confirmBeforeQuit },
-              set: { store.send(.setConfirmBeforeQuit($0)) }
-            )
+            isOn: $store.confirmBeforeQuit
           )
           .help("Ask before quitting Supacode")
         }

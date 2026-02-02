@@ -90,7 +90,12 @@ enum WorktreeNameGenerator {
 
   static func nextName(excluding existing: Set<String>) -> String? {
     let normalized = Set(existing.map { $0.lowercased() })
-    let randomSuffix = String(format: "%03d", Int.random(in: 0...999))
+    let randomSuffix = Int.random(in: 0...999)
+      .formatted(
+        .number
+          .grouping(.never)
+          .precision(.integerLength(3))
+      )
     let available = adjectives.flatMap { adjective in
       animals.map { "\(adjective)-\($0)-\(randomSuffix)" }
     }.filter { !normalized.contains($0) }

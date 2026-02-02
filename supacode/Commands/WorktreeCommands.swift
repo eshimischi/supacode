@@ -3,8 +3,7 @@ import ComposableArchitecture
 import SwiftUI
 
 struct WorktreeCommands: Commands {
-  let store: StoreOf<AppFeature>
-  @ObservedObject private var viewStore: ViewStore<AppFeature.State, AppFeature.Action>
+  @Bindable var store: StoreOf<AppFeature>
   @FocusedValue(\.openSelectedWorktreeAction) private var openSelectedWorktreeAction
   @FocusedValue(\.confirmRemoveWorktreeAction) private var confirmRemoveWorktreeAction
   @FocusedValue(\.removeWorktreeAction) private var removeWorktreeAction
@@ -13,14 +12,13 @@ struct WorktreeCommands: Commands {
 
   init(store: StoreOf<AppFeature>) {
     self.store = store
-    viewStore = ViewStore(store, observe: { $0 })
   }
 
   var body: some Commands {
-    let repositories = viewStore.state.repositories
+    let repositories = store.repositories
     let orderedRows = repositories.orderedWorktreeRows()
     let pullRequestURL = selectedPullRequestURL
-    let githubIntegrationEnabled = viewStore.state.settings.githubIntegrationEnabled
+    let githubIntegrationEnabled = store.settings.githubIntegrationEnabled
     CommandMenu("Worktrees") {
       ForEach(worktreeShortcuts.indices, id: \.self) { index in
         let shortcut = worktreeShortcuts[index]
@@ -111,7 +109,7 @@ struct WorktreeCommands: Commands {
   }
 
   private var selectedPullRequestURL: URL? {
-    let repositories = viewStore.state.repositories
+    let repositories = store.repositories
     guard let selectedWorktreeID = repositories.selectedWorktreeID else { return nil }
     let pullRequest = repositories.worktreeInfoByID[selectedWorktreeID]?.pullRequest
     return pullRequest.flatMap { URL(string: $0.url) }
@@ -135,7 +133,7 @@ struct WorktreeCommands: Commands {
 
   private func worktreeShortcutTitle(index: Int, row: WorktreeRowModel?) -> String {
     guard let row else { return "Worktree \(index + 1)" }
-    let repositoryName = viewStore.state.repositories.repositoryName(for: row.repositoryID) ?? "Repository"
+    let repositoryName = store.repositories.repositoryName(for: row.repositoryID) ?? "Repository"
     return "\(repositoryName) — \(row.name)"
   }
 }

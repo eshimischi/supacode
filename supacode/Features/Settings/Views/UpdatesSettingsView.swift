@@ -11,17 +11,11 @@ struct UpdatesSettingsView: View {
         Section("Automatic Updates") {
           Toggle(
             "Check for updates automatically",
-            isOn: Binding(
-              get: { settingsStore.updatesAutomaticallyCheckForUpdates },
-              set: { settingsStore.send(.setUpdatesAutomaticallyCheckForUpdates($0)) }
-            )
+            isOn: $settingsStore.updatesAutomaticallyCheckForUpdates
           )
           Toggle(
             "Download and install updates automatically",
-            isOn: Binding(
-              get: { settingsStore.updatesAutomaticallyDownloadUpdates },
-              set: { settingsStore.send(.setUpdatesAutomaticallyDownloadUpdates($0)) }
-            )
+            isOn: $settingsStore.updatesAutomaticallyDownloadUpdates
           )
           .disabled(!settingsStore.updatesAutomaticallyCheckForUpdates)
         }

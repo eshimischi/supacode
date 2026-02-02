@@ -11,17 +11,18 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
   @Bindable var store: StoreOf<AppFeature>
+  @Bindable var repositoriesStore: StoreOf<RepositoriesFeature>
   let terminalManager: WorktreeTerminalManager
   @Environment(\.scenePhase) private var scenePhase
   @State private var leftSidebarVisibility: NavigationSplitViewVisibility = .all
 
   init(store: StoreOf<AppFeature>, terminalManager: WorktreeTerminalManager) {
     self.store = store
+    repositoriesStore = store.scope(state: \.repositories, action: \.repositories)
     self.terminalManager = terminalManager
   }
 
   var body: some View {
-    let repositoriesStore = store.scope(state: \.repositories, action: \.repositories)
     Group {
       if store.repositories.isInitialLoadComplete {
         NavigationSplitView(columnVisibility: $leftSidebarVisibility) {
@@ -44,10 +45,7 @@ struct ContentView: View {
       store.send(.scenePhaseChanged(newValue))
     }
     .fileImporter(
-      isPresented: Binding(
-        get: { store.repositories.isOpenPanelPresented },
-        set: { store.send(.repositories(.setOpenPanelPresented($0))) }
-      ),
+      isPresented: $repositoriesStore.isOpenPanelPresented.sending(\.setOpenPanelPresented),
       allowedContentTypes: [.folder],
       allowsMultipleSelection: true
     ) { result in

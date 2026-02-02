@@ -49,10 +49,7 @@ struct GithubSettingsView: View {
         Section("GitHub integration") {
           Toggle(
             "Enable GitHub integration",
-            isOn: Binding(
-              get: { store.githubIntegrationEnabled },
-              set: { store.send(.setGithubIntegrationEnabled($0)) }
-            )
+            isOn: $store.githubIntegrationEnabled
           )
           .help("Enable GitHub integration")
         }

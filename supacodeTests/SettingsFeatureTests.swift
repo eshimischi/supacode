@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import CustomDump
 import DependenciesTestSupport
 import Foundation
 import Testing
@@ -61,7 +62,7 @@ struct SettingsFeatureTests {
       )
     }
 
-    await store.send(.setAppearanceMode(.light)) {
+    await store.send(.binding(.set(\.appearanceMode, .light))) {
       $0.appearanceMode = .light
     }
     let expectedSettings = GlobalSettings(
@@ -77,7 +78,7 @@ struct SettingsFeatureTests {
     await store.receive(\.delegate.settingsChanged)
 
     await store.finish()
-    #expect(saved.value == expectedSettings)
+    expectNoDifference(saved.value, expectedSettings)
   }
 
   @Test(.dependencies) func selectionDoesNotMutateRepositorySettings() async {

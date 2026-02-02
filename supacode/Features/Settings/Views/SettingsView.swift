@@ -14,22 +14,21 @@ extension View {
 
 struct SettingsView: View {
   @Bindable var store: StoreOf<AppFeature>
+  @Bindable var settingsStore: StoreOf<SettingsFeature>
+
+  init(store: StoreOf<AppFeature>) {
+    self.store = store
+    settingsStore = store.scope(state: \.settings, action: \.settings)
+  }
 
   var body: some View {
-    let settingsStore = store.scope(state: \.settings, action: \.settings)
     let updatesStore = store.scope(state: \.updates, action: \.updates)
     let repositories = store.repositories.repositories
-    let selection = store.settings.selection
-    let selectionBinding = Binding<SettingsSection?>(
-      get: { store.settings.selection },
-      set: { selection in
-        store.send(.settings(.setSelection(selection ?? .general)))
-      }
-    )
+    let selection = settingsStore.selection ?? .general
 
     NavigationSplitView(columnVisibility: .constant(.all)) {
       VStack(spacing: 0) {
-        List(selection: selectionBinding) {
+        List(selection: $settingsStore.selection.sending(\.setSelection)) {
           Label("General", systemImage: "gearshape")
             .tag(SettingsSection.general)
           Label("Notifications", systemImage: "bell")

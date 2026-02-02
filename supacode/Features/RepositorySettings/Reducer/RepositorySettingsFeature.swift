@@ -13,16 +13,12 @@ struct RepositorySettingsFeature {
     var isBranchDataLoaded = false
   }
 
-  enum Action {
+  enum Action: BindableAction {
     case task
     case settingsLoaded(RepositorySettings, isBareRepository: Bool)
     case branchDataLoaded([String], defaultBaseRef: String)
-    case setSetupScript(String)
-    case setRunScript(String)
-    case setWorktreeBaseRef(String)
-    case setCopyIgnoredOnWorktreeCreate(Bool)
-    case setCopyUntrackedOnWorktreeCreate(Bool)
     case delegate(Delegate)
+    case binding(BindingAction<State>)
   }
 
   @CasePathable
@@ -34,6 +30,7 @@ struct RepositorySettingsFeature {
   @Dependency(\.gitClient) private var gitClient
 
   var body: some Reducer<State, Action> {
+    BindingReducer()
     Reduce { state, action in
       switch action {
       case .task:
@@ -89,50 +86,11 @@ struct RepositorySettingsFeature {
         state.isBranchDataLoaded = true
         return .none
 
-      case .setSetupScript(let script):
-        state.settings.setupScript = script
-        let settings = state.settings
-        let rootURL = state.rootURL
-        let repositorySettingsClient = repositorySettingsClient
-        return .run { send in
-          repositorySettingsClient.save(settings, rootURL)
-          await send(.delegate(.settingsChanged(rootURL)))
+      case .binding:
+        if state.isBareRepository {
+          state.settings.copyIgnoredOnWorktreeCreate = false
+          state.settings.copyUntrackedOnWorktreeCreate = false
         }
-
-      case .setRunScript(let script):
-        state.settings.runScript = script
-        let settings = state.settings
-        let rootURL = state.rootURL
-        let repositorySettingsClient = repositorySettingsClient
-        return .run { send in
-          repositorySettingsClient.save(settings, rootURL)
-          await send(.delegate(.settingsChanged(rootURL)))
-        }
-
-      case .setWorktreeBaseRef(let ref):
-        state.settings.worktreeBaseRef = ref
-        let settings = state.settings
-        let rootURL = state.rootURL
-        let repositorySettingsClient = repositorySettingsClient
-        return .run { send in
-          repositorySettingsClient.save(settings, rootURL)
-          await send(.delegate(.settingsChanged(rootURL)))
-        }
-
-      case .setCopyIgnoredOnWorktreeCreate(let isEnabled):
-        guard !state.isBareRepository else { return .none }
-        state.settings.copyIgnoredOnWorktreeCreate = isEnabled
-        let settings = state.settings
-        let rootURL = state.rootURL
-        let repositorySettingsClient = repositorySettingsClient
-        return .run { send in
-          repositorySettingsClient.save(settings, rootURL)
-          await send(.delegate(.settingsChanged(rootURL)))
-        }
-
-      case .setCopyUntrackedOnWorktreeCreate(let isEnabled):
-        guard !state.isBareRepository else { return .none }
-        state.settings.copyUntrackedOnWorktreeCreate = isEnabled
         let settings = state.settings
         let rootURL = state.rootURL
         let repositorySettingsClient = repositorySettingsClient

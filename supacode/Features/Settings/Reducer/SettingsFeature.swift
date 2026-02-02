@@ -13,7 +13,7 @@ struct SettingsFeature {
     var notificationSoundEnabled: Bool
     var githubIntegrationEnabled: Bool
     var deleteBranchOnArchive: Bool
-    var selection: SettingsSection = .general
+    var selection: SettingsSection? = .general
     var repositorySettings: RepositorySettingsFeature.State?
 
     init(settings: GlobalSettings = .default) {
@@ -41,20 +41,13 @@ struct SettingsFeature {
     }
   }
 
-  enum Action {
+  enum Action: BindableAction {
     case task
     case settingsLoaded(GlobalSettings)
-    case setAppearanceMode(AppearanceMode)
-    case setConfirmBeforeQuit(Bool)
-    case setUpdatesAutomaticallyCheckForUpdates(Bool)
-    case setUpdatesAutomaticallyDownloadUpdates(Bool)
-    case setInAppNotificationsEnabled(Bool)
-    case setNotificationSoundEnabled(Bool)
-    case setGithubIntegrationEnabled(Bool)
-    case setDeleteBranchOnArchive(Bool)
-    case setSelection(SettingsSection)
+    case setSelection(SettingsSection?)
     case repositorySettings(RepositorySettingsFeature.Action)
     case delegate(Delegate)
+    case binding(BindingAction<State>)
   }
 
   @CasePathable
@@ -65,6 +58,7 @@ struct SettingsFeature {
   @Dependency(\.settingsClient) private var settingsClient
 
   var body: some Reducer<State, Action> {
+    BindingReducer()
     Reduce { state, action in
       switch action {
       case .task:
@@ -84,78 +78,7 @@ struct SettingsFeature {
         state.deleteBranchOnArchive = settings.deleteBranchOnArchive
         return .send(.delegate(.settingsChanged(settings)))
 
-      case .setAppearanceMode(let mode):
-        state.appearanceMode = mode
-        let settings = state.globalSettings
-        return .merge(
-          .send(.delegate(.settingsChanged(settings))),
-          .run { _ in
-            await settingsClient.save(settings)
-          }
-        )
-
-      case .setConfirmBeforeQuit(let value):
-        state.confirmBeforeQuit = value
-        let settings = state.globalSettings
-        return .merge(
-          .send(.delegate(.settingsChanged(settings))),
-          .run { _ in
-            await settingsClient.save(settings)
-          }
-        )
-
-      case .setUpdatesAutomaticallyCheckForUpdates(let value):
-        state.updatesAutomaticallyCheckForUpdates = value
-        let settings = state.globalSettings
-        return .merge(
-          .send(.delegate(.settingsChanged(settings))),
-          .run { _ in
-            await settingsClient.save(settings)
-          }
-        )
-
-      case .setUpdatesAutomaticallyDownloadUpdates(let value):
-        state.updatesAutomaticallyDownloadUpdates = value
-        let settings = state.globalSettings
-        return .merge(
-          .send(.delegate(.settingsChanged(settings))),
-          .run { _ in
-            await settingsClient.save(settings)
-          }
-        )
-
-      case .setInAppNotificationsEnabled(let value):
-        state.inAppNotificationsEnabled = value
-        let settings = state.globalSettings
-        return .merge(
-          .send(.delegate(.settingsChanged(settings))),
-          .run { _ in
-            await settingsClient.save(settings)
-          }
-        )
-
-      case .setNotificationSoundEnabled(let value):
-        state.notificationSoundEnabled = value
-        let settings = state.globalSettings
-        return .merge(
-          .send(.delegate(.settingsChanged(settings))),
-          .run { _ in
-            await settingsClient.save(settings)
-          }
-        )
-
-      case .setDeleteBranchOnArchive(let value):
-        state.deleteBranchOnArchive = value
-        let settings = state.globalSettings
-        return .merge(
-          .send(.delegate(.settingsChanged(settings))),
-          .run { _ in
-            await settingsClient.save(settings)
-          }
-        )
-
-      case .setGithubIntegrationEnabled(let value):
-        state.githubIntegrationEnabled = value
+      case .binding:
         let settings = state.globalSettings
         return .merge(
           .send(.delegate(.settingsChanged(settings))),
@@ -165,7 +88,7 @@ struct SettingsFeature {
         )
 
       case .setSelection(let selection):
-        state.selection = selection
+        state.selection = selection ?? .general
         return .none
 
       case .repositorySettings:

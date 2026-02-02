@@ -15,7 +15,6 @@ enum TerminalTabBarMetrics {
   static let activeTabOffset: CGFloat = 0.5
   static let activeTabBottomPadding: CGFloat = 1
   static let closeButtonSize: CGFloat = 16
-  static let closeIconSize: CGFloat = 9
   static let dirtyIndicatorSize: CGFloat = 8
   static let overflowShadowWidth: CGFloat = 24
   static let dropIndicatorWidth: CGFloat = 2
