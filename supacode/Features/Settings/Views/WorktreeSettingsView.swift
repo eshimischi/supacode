@@ -10,15 +10,13 @@ struct WorktreeSettingsView: View {
         Section("Worktree") {
           VStack(alignment: .leading) {
             Toggle(
-              "Delete branch on archive",
+              "Also delete local branch",
               isOn: $store.deleteBranchOnArchive
             )
             .help("Delete the local branch when archiving a worktree")
-            Text("Delete the local branch when archiving a worktree.")
+            Text("Removes the local branch along with the worktree. Remote branches must be deleted on GitHub.")
               .foregroundStyle(.secondary)
-            Text("To delete the remote branch, configure it on GitHub.")
-              .foregroundStyle(.secondary)
-            Text("Warning: archived worktrees will be unrecoverable")
+            Text("Uncommitted changes will be lost.")
               .foregroundStyle(.red)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
