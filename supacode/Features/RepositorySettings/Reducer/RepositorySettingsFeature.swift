@@ -26,7 +26,6 @@ struct RepositorySettingsFeature {
     case settingsChanged(URL)
   }
 
-  @Dependency(\.repositorySettingsClient) private var repositorySettingsClient
   @Dependency(\.gitClient) private var gitClient
 
   var body: some Reducer<State, Action> {
@@ -35,10 +34,10 @@ struct RepositorySettingsFeature {
       switch action {
       case .task:
         let rootURL = state.rootURL
-        let repositorySettingsClient = repositorySettingsClient
+        @Shared(.repositorySettings(rootURL)) var repositorySettings
+        let settings = repositorySettings
         let gitClient = gitClient
         return .run { send in
-          let settings = repositorySettingsClient.load(rootURL)
           let isBareRepository = (try? await gitClient.isBareRepository(rootURL)) ?? false
           await send(.settingsLoaded(settings, isBareRepository: isBareRepository))
           let branches: [String]
@@ -66,12 +65,9 @@ struct RepositorySettingsFeature {
         state.isBareRepository = isBareRepository
         guard isBareRepository, updatedSettings != settings else { return .none }
         let rootURL = state.rootURL
-        let repositorySettingsClient = repositorySettingsClient
-        let settingsToSave = updatedSettings
-        return .run { send in
-          repositorySettingsClient.save(settingsToSave, rootURL)
-          await send(.delegate(.settingsChanged(rootURL)))
-        }
+        @Shared(.repositorySettings(rootURL)) var repositorySettings
+        $repositorySettings.withLock { $0 = updatedSettings }
+        return .send(.delegate(.settingsChanged(rootURL)))
 
       case .branchDataLoaded(let branches, let defaultBaseRef):
         state.defaultWorktreeBaseRef = defaultBaseRef
@@ -91,13 +87,10 @@ struct RepositorySettingsFeature {
           state.settings.copyIgnoredOnWorktreeCreate = false
           state.settings.copyUntrackedOnWorktreeCreate = false
         }
-        let settings = state.settings
         let rootURL = state.rootURL
-        let repositorySettingsClient = repositorySettingsClient
-        return .run { send in
-          repositorySettingsClient.save(settings, rootURL)
-          await send(.delegate(.settingsChanged(rootURL)))
-        }
+        @Shared(.repositorySettings(rootURL)) var repositorySettings
+        $repositorySettings.withLock { $0 = state.settings }
+        return .send(.delegate(.settingsChanged(rootURL)))
 
       case .delegate:
         return .none

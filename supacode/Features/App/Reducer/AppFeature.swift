@@ -66,7 +66,6 @@ struct AppFeature {
   }
 
   @Dependency(\.analyticsClient) private var analyticsClient
-  @Dependency(\.repositorySettingsClient) private var repositorySettingsClient
   @Dependency(\.repositoryPersistence) private var repositoryPersistence
   @Dependency(\.workspaceClient) private var workspaceClient
   @Dependency(\.terminalClient) private var terminalClient
@@ -120,7 +119,8 @@ struct AppFeature {
         }
         let rootURL = worktree.repositoryRootURL
         let worktreeID = worktree.id
-        let repositorySettingsClient = repositorySettingsClient
+        @Shared(.repositorySettings(rootURL)) var repositorySettings
+        let settings = repositorySettings
         return .merge(
           .run { _ in
             await repositoryPersistence.saveLastFocusedWorktreeID(lastFocusedWorktreeID)
@@ -132,10 +132,7 @@ struct AppFeature {
           .run { _ in
             await worktreeInfoWatcher.send(.setSelectedWorktreeID(worktree.id))
           },
-          .run { send in
-            let settings = repositorySettingsClient.load(rootURL)
-            await send(.worktreeSettingsLoaded(settings, worktreeID: worktreeID))
-          }
+          .send(.worktreeSettingsLoaded(settings, worktreeID: worktreeID))
         )
 
       case .repositories(.delegate(.repositoriesChanged(let repositories))):
@@ -186,10 +183,10 @@ struct AppFeature {
             state.settings.repositorySettings = nil
             return .none
           }
-          let settings = repositorySettingsClient.load(repository.rootURL)
+          @Shared(.repositorySettings(repository.rootURL)) var repositorySettings
           state.settings.repositorySettings = RepositorySettingsFeature.State(
             rootURL: repository.rootURL,
-            settings: settings
+            settings: repositorySettings
           )
         case .general, .notifications, .worktree, .updates, .github:
           state.settings.repositorySettings = nil
@@ -239,12 +236,9 @@ struct AppFeature {
         }
         let rootURL = worktree.repositoryRootURL
         let actionID = action.settingsID
-        let repositorySettingsClient = repositorySettingsClient
-        return .run { _ in
-          var settings = repositorySettingsClient.load(rootURL)
-          settings.openActionID = actionID
-          repositorySettingsClient.save(settings, rootURL)
-        }
+        @Shared(.repositorySettings(rootURL)) var repositorySettings
+        $repositorySettings.withLock { $0.openActionID = actionID }
+        return .none
 
       case .openSelectedWorktree:
         return .send(.openWorktree(OpenWorktreeAction.availableSelection(state.openActionSelection)))
@@ -410,11 +404,8 @@ struct AppFeature {
           return .none
         }
         let worktreeID = selectedWorktree.id
-        let repositorySettingsClient = repositorySettingsClient
-        return .run { send in
-          let settings = repositorySettingsClient.load(rootURL)
-          await send(.worktreeSettingsLoaded(settings, worktreeID: worktreeID))
-        }
+        @Shared(.repositorySettings(rootURL)) var repositorySettings
+        return .send(.worktreeSettingsLoaded(repositorySettings, worktreeID: worktreeID))
 
       case .worktreeSettingsLoaded(let settings, let worktreeID):
         guard state.repositories.selectedWorktreeID == worktreeID else {

@@ -126,7 +126,6 @@ struct RepositoriesFeature {
   @Dependency(\.githubCLI) private var githubCLI
   @Dependency(\.githubIntegration) private var githubIntegration
   @Dependency(\.repositoryPersistence) private var repositoryPersistence
-  @Dependency(\.repositorySettingsClient) private var repositorySettingsClient
   @Dependency(\.uuid) private var uuid
 
   var body: some Reducer<State, Action> {
@@ -410,8 +409,10 @@ struct RepositoriesFeature {
         }
         let previousSelection = state.selectedWorktreeID
         let pendingID = "pending:\(uuid().uuidString)"
-        let repositorySettings = repositorySettingsClient.load(repository.rootURL)
+        @Shared(.repositorySettings(repository.rootURL)) var repositorySettings
         let selectedBaseRef = repositorySettings.worktreeBaseRef
+        let copyIgnoredOnWorktreeCreate = repositorySettings.copyIgnoredOnWorktreeCreate
+        let copyUntrackedOnWorktreeCreate = repositorySettings.copyUntrackedOnWorktreeCreate
         state.pendingWorktrees.append(
           PendingWorktree(
             id: pendingID,
@@ -444,8 +445,8 @@ struct RepositoriesFeature {
               return
             }
             let isBareRepository = (try? await gitClient.isBareRepository(repository.rootURL)) ?? false
-            let copyIgnored = isBareRepository ? false : repositorySettings.copyIgnoredOnWorktreeCreate
-            let copyUntracked = isBareRepository ? false : repositorySettings.copyUntrackedOnWorktreeCreate
+            let copyIgnored = isBareRepository ? false : copyIgnoredOnWorktreeCreate
+            let copyUntracked = isBareRepository ? false : copyUntrackedOnWorktreeCreate
             let resolvedBaseRef: String
             if (selectedBaseRef ?? "").isEmpty {
               resolvedBaseRef = await gitClient.automaticWorktreeBaseRef(repository.rootURL) ?? ""
