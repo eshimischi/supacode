@@ -339,7 +339,7 @@ struct GitClient {
       if deleteBranch, !worktree.name.isEmpty {
         let names = try await localBranchNames(for: worktree.repositoryRootURL)
         if names.contains(worktree.name.lowercased()) {
-          _ = try await runGit(
+          _ = try? await runGit(
             operation: .branchDelete,
             arguments: ["-C", rootPath, "branch", "-D", worktree.name]
           )
@@ -354,7 +354,7 @@ struct GitClient {
     if deleteBranch, !worktree.name.isEmpty {
       let names = try await localBranchNames(for: worktree.repositoryRootURL)
       if names.contains(worktree.name.lowercased()) {
-        _ = try await runGit(
+        _ = try? await runGit(
           operation: .branchDelete,
           arguments: ["-C", rootPath, "branch", "-D", worktree.name]
         )
