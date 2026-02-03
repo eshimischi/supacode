@@ -44,6 +44,26 @@ struct WorktreeTerminalManagerTests {
     #expect(event == .setupScriptConsumed(worktreeID: worktree.id))
   }
 
+  @Test func notificationIndicatorUsesCurrentCountOnStreamStart() async {
+    let manager = WorktreeTerminalManager(runtime: GhosttyRuntime())
+    let worktree = makeWorktree()
+    let state = manager.state(for: worktree)
+
+    state.hasUnseenNotification = true
+    state.onNotificationIndicatorChanged?()
+    state.hasUnseenNotification = false
+
+    let stream = manager.eventStream()
+    var iterator = stream.makeAsyncIterator()
+
+    let first = await iterator.next()
+    state.onSetupScriptConsumed?()
+    let second = await iterator.next()
+
+    #expect(first == .notificationIndicatorChanged(count: 0))
+    #expect(second == .setupScriptConsumed(worktreeID: worktree.id))
+  }
+
   private func makeWorktree() -> Worktree {
     Worktree(
       id: "/tmp/repo/wt-1",

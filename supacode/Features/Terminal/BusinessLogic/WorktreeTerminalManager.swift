@@ -57,13 +57,17 @@ final class WorktreeTerminalManager {
     let (stream, continuation) = AsyncStream.makeStream(of: TerminalClient.Event.self)
     eventContinuation = continuation
     lastNotificationIndicatorCount = nil
-    emitNotificationIndicatorCountIfNeeded()
     if !pendingEvents.isEmpty {
-      for event in pendingEvents {
+      let bufferedEvents = pendingEvents
+      pendingEvents.removeAll()
+      for event in bufferedEvents {
+        if case .notificationIndicatorChanged = event {
+          continue
+        }
         continuation.yield(event)
       }
-      pendingEvents.removeAll()
     }
+    emitNotificationIndicatorCountIfNeeded()
     return stream
   }
 
