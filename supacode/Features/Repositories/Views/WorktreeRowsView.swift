@@ -145,6 +145,7 @@ struct WorktreeRowsView: View {
         .disabled(isRepositoryRemoving)
       }
     }
+    .contentShape(.dragPreview, .rect)
     .environment(\.colorScheme, colorScheme)
     .preferredColorScheme(colorScheme)
   }
