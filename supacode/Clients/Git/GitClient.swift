@@ -6,6 +6,7 @@ enum GitOperation: String {
   case worktreeList = "worktree_list"
   case worktreeCreate = "worktree_create"
   case worktreeRemove = "worktree_remove"
+  case worktreePrune = "worktree_prune"
   case repoIsBare = "repo_is_bare"
   case branchNames = "branch_names"
   case branchRefs = "branch_refs"
@@ -323,7 +324,42 @@ struct GitClient {
 
   nonisolated func removeWorktree(_ worktree: Worktree, deleteBranch: Bool) async throws -> URL {
     let rootPath = worktree.repositoryRootURL.path(percentEncoded: false)
-    let worktreePath = worktree.workingDirectory.path(percentEncoded: false)
+    let worktreeURL = worktree.workingDirectory.standardizedFileURL
+    let worktreePath = worktreeURL.path(percentEncoded: false)
+    let relocatedURL = Self.relocateWorktreeDirectory(worktreeURL)
+    if let relocatedURL {
+      do {
+        _ = try await runGit(
+          operation: .worktreePrune,
+          arguments: ["-C", rootPath, "worktree", "prune"]
+        )
+      } catch {
+        _ = try await runGit(
+          operation: .worktreeRemove,
+          arguments: [
+            "-C",
+            rootPath,
+            "worktree",
+            "remove",
+            "--force",
+            worktreePath,
+          ]
+        )
+      }
+      if deleteBranch, !worktree.name.isEmpty {
+        let names = try await localBranchNames(for: worktree.repositoryRootURL)
+        if names.contains(worktree.name.lowercased()) {
+          _ = try await runGit(
+            operation: .branchDelete,
+            arguments: ["-C", rootPath, "branch", "-D", worktree.name]
+          )
+        }
+      }
+      Task.detached {
+        try? FileManager.default.removeItem(at: relocatedURL)
+      }
+      return worktree.workingDirectory
+    }
     _ = try await runGit(
       operation: .worktreeRemove,
       arguments: [
@@ -510,6 +546,40 @@ struct GitClient {
       return path
     }
     return path.deletingLastPathComponent()
+  }
+
+  nonisolated private static func relocateWorktreeDirectory(_ worktreeURL: URL) -> URL? {
+    let fileManager = FileManager.default
+    let worktreePath = worktreeURL.path(percentEncoded: false)
+    guard fileManager.fileExists(atPath: worktreePath) else {
+      return nil
+    }
+    let candidates = [
+      URL(filePath: "/tmp", directoryHint: .isDirectory),
+      fileManager.temporaryDirectory,
+    ]
+    for baseURL in candidates {
+      let trashBaseURL = baseURL.appending(
+        path: "supacode-worktree-trash",
+        directoryHint: URL.DirectoryHint.isDirectory
+      )
+      do {
+        try fileManager.createDirectory(at: trashBaseURL, withIntermediateDirectories: true)
+      } catch {
+        continue
+      }
+      let destinationURL = trashBaseURL.appending(
+        path: "\(worktreeURL.lastPathComponent)-\(UUID().uuidString)",
+        directoryHint: URL.DirectoryHint.isDirectory
+      )
+      do {
+        try fileManager.moveItem(at: worktreeURL, to: destinationURL)
+        return destinationURL
+      } catch {
+        continue
+      }
+    }
+    return nil
   }
 
   nonisolated static func parseGithubRemoteInfo(_ remoteURL: String) -> GithubRemoteInfo? {
