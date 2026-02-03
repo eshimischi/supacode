@@ -50,8 +50,20 @@ struct CommandPaletteFeatureTests {
       subtitle: "Run - main",
       kind: .runWorktree("wt-fox")
     )
+    let editorFox = CommandPaletteItem(
+      id: "worktree.fox.editor",
+      title: "Repo / fox",
+      subtitle: "Open in Editor - main",
+      kind: .openWorktreeInEditor("wt-fox")
+    )
+    let removeFox = CommandPaletteItem(
+      id: "worktree.fox.remove",
+      title: "Repo / fox",
+      subtitle: "Remove Worktree - main",
+      kind: .removeWorktree("wt-fox", "repo-fox")
+    )
     var state = CommandPaletteFeature.State()
-    state.items = [openSettings, selectFox, runFox]
+    state.items = [openSettings, selectFox, runFox, editorFox, removeFox]
     let store = TestStore(initialState: state) {
       CommandPaletteFeature()
     }
@@ -64,6 +76,28 @@ struct CommandPaletteFeatureTests {
     expectNoDifference(
       store.state.filteredItems.map(\.id),
       [selectFox.id, runFox.id]
+    )
+  }
+
+  @Test func queryMatchesGlobalItemsBeforeWorktrees() {
+    let openSettings = CommandPaletteItem(
+      id: "global.open-settings",
+      title: "Open Settings",
+      subtitle: nil,
+      kind: .openSettings
+    )
+    let selectSettings = CommandPaletteItem(
+      id: "worktree.settings.select",
+      title: "Repo / settings",
+      subtitle: "main",
+      kind: .worktreeSelect("wt-settings")
+    )
+    var state = CommandPaletteFeature.State()
+    state.items = [selectSettings, openSettings]
+
+    expectNoDifference(
+      CommandPaletteFeature.filterItems(items: state.items, query: "set"),
+      [openSettings, selectSettings]
     )
   }
 
