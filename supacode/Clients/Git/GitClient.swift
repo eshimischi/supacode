@@ -334,17 +334,7 @@ struct GitClient {
           arguments: ["-C", rootPath, "worktree", "prune", "--expire=now"]
         )
       } catch {
-        _ = try await runGit(
-          operation: .worktreeRemove,
-          arguments: [
-            "-C",
-            rootPath,
-            "worktree",
-            "remove",
-            "--force",
-            worktreePath,
-          ]
-        )
+        try await runGitWorktreeRemove(rootPath: rootPath, worktreePath: worktreePath)
       }
       if deleteBranch, !worktree.name.isEmpty {
         let names = try await localBranchNames(for: worktree.repositoryRootURL)
@@ -360,17 +350,7 @@ struct GitClient {
       }
       return worktree.workingDirectory
     }
-    _ = try await runGit(
-      operation: .worktreeRemove,
-      arguments: [
-        "-C",
-        rootPath,
-        "worktree",
-        "remove",
-        "--force",
-        worktreePath,
-      ]
-    )
+    try await runGitWorktreeRemove(rootPath: rootPath, worktreePath: worktreePath)
     if deleteBranch, !worktree.name.isEmpty {
       let names = try await localBranchNames(for: worktree.repositoryRootURL)
       if names.contains(worktree.name.lowercased()) {
@@ -546,6 +526,37 @@ struct GitClient {
       return path
     }
     return path.deletingLastPathComponent()
+  }
+
+  nonisolated private func runGitWorktreeRemove(
+    rootPath: String,
+    worktreePath: String
+  ) async throws {
+    do {
+      _ = try await runGit(
+        operation: .worktreeRemove,
+        arguments: [
+          "-C",
+          rootPath,
+          "worktree",
+          "remove",
+          "--force",
+          worktreePath,
+        ]
+      )
+    } catch {
+      if Self.isNotWorkingTreeError(error) {
+        return
+      }
+      throw error
+    }
+  }
+
+  nonisolated private static func isNotWorkingTreeError(_ error: Error) -> Bool {
+    guard case GitClientError.commandFailed(_, let message) = error else {
+      return false
+    }
+    return message.localizedCaseInsensitiveContains("is not a working tree")
   }
 
   nonisolated private static func relocateWorktreeDirectory(_ worktreeURL: URL) -> URL? {
