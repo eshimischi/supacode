@@ -18,7 +18,8 @@ struct SettingsFeatureTests {
       dockBadgeEnabled: false,
       notificationSoundEnabled: true,
       githubIntegrationEnabled: true,
-      deleteBranchOnArchive: false
+      deleteBranchOnArchive: false,
+      sortMergedWorktreesToBottom: false
     )
     let store = TestStore(initialState: SettingsFeature.State()) {
       SettingsFeature()
@@ -37,6 +38,7 @@ struct SettingsFeatureTests {
       $0.notificationSoundEnabled = true
       $0.githubIntegrationEnabled = true
       $0.deleteBranchOnArchive = false
+      $0.sortMergedWorktreesToBottom = false
     }
     await store.receive(\.delegate.settingsChanged)
   }
@@ -51,7 +53,8 @@ struct SettingsFeatureTests {
       dockBadgeEnabled: true,
       notificationSoundEnabled: false,
       githubIntegrationEnabled: true,
-      deleteBranchOnArchive: true
+      deleteBranchOnArchive: true,
+      sortMergedWorktreesToBottom: true
     )
     let saved = LockIsolated<GlobalSettings?>(nil)
     let store = TestStore(initialState: SettingsFeature.State(settings: initialSettings)) {
@@ -77,7 +80,8 @@ struct SettingsFeatureTests {
       dockBadgeEnabled: initialSettings.dockBadgeEnabled,
       notificationSoundEnabled: initialSettings.notificationSoundEnabled,
       githubIntegrationEnabled: initialSettings.githubIntegrationEnabled,
-      deleteBranchOnArchive: initialSettings.deleteBranchOnArchive
+      deleteBranchOnArchive: initialSettings.deleteBranchOnArchive,
+      sortMergedWorktreesToBottom: initialSettings.sortMergedWorktreesToBottom
     )
     await store.receive(\.delegate.settingsChanged)
 
@@ -122,7 +126,8 @@ struct SettingsFeatureTests {
       dockBadgeEnabled: false,
       notificationSoundEnabled: false,
       githubIntegrationEnabled: true,
-      deleteBranchOnArchive: true
+      deleteBranchOnArchive: true,
+      sortMergedWorktreesToBottom: false
     )
 
     await store.send(.settingsLoaded(loaded)) {
@@ -135,6 +140,7 @@ struct SettingsFeatureTests {
       $0.notificationSoundEnabled = false
       $0.githubIntegrationEnabled = true
       $0.deleteBranchOnArchive = true
+      $0.sortMergedWorktreesToBottom = false
       $0.selection = selection
       $0.repositorySettings = RepositorySettingsFeature.State(
         rootURL: rootURL,
