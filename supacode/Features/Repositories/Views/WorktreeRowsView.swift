@@ -12,23 +12,63 @@ struct WorktreeRowsView: View {
   var body: some View {
     if isExpanded {
       let state = store.state
-      let rows = state.worktreeRows(in: repository)
+      let sections = state.worktreeRowSections(in: repository)
       let isRepositoryRemoving = state.isRemovingRepository(repository)
       let showShortcutHints = commandKeyObserver.isPressed
       let allRows = showShortcutHints ? state.orderedWorktreeRows() : []
       let shortcutIndexByID = Dictionary(
         uniqueKeysWithValues: allRows.enumerated().map { ($0.element.id, $0.offset) }
       )
-      ForEach(rows) { row in
-        let shortcutHint =
-          showShortcutHints ? worktreeShortcutHint(for: shortcutIndexByID[row.id]) : nil
-        rowView(
-          row,
-          isRepositoryRemoving: isRepositoryRemoving,
-          shortcutHint: shortcutHint
-        )
+      let rowIDs = sections.allRows.map(\.id)
+      Group {
+        if let row = sections.main {
+          let shortcutHint =
+            showShortcutHints ? worktreeShortcutHint(for: shortcutIndexByID[row.id]) : nil
+          rowView(
+            row,
+            isRepositoryRemoving: isRepositoryRemoving,
+            moveDisabled: true,
+            shortcutHint: shortcutHint
+          )
+        }
+        ForEach(sections.pinned) { row in
+          let shortcutHint =
+            showShortcutHints ? worktreeShortcutHint(for: shortcutIndexByID[row.id]) : nil
+          rowView(
+            row,
+            isRepositoryRemoving: isRepositoryRemoving,
+            moveDisabled: isRepositoryRemoving || row.isDeleting,
+            shortcutHint: shortcutHint
+          )
+        }
+        .onMove { offsets, destination in
+          store.send(.pinnedWorktreesMoved(repositoryID: repository.id, offsets, destination))
+        }
+        ForEach(sections.pending) { row in
+          let shortcutHint =
+            showShortcutHints ? worktreeShortcutHint(for: shortcutIndexByID[row.id]) : nil
+          rowView(
+            row,
+            isRepositoryRemoving: isRepositoryRemoving,
+            moveDisabled: true,
+            shortcutHint: shortcutHint
+          )
+        }
+        ForEach(sections.unpinned) { row in
+          let shortcutHint =
+            showShortcutHints ? worktreeShortcutHint(for: shortcutIndexByID[row.id]) : nil
+          rowView(
+            row,
+            isRepositoryRemoving: isRepositoryRemoving,
+            moveDisabled: isRepositoryRemoving || row.isDeleting,
+            shortcutHint: shortcutHint
+          )
+        }
+        .onMove { offsets, destination in
+          store.send(.unpinnedWorktreesMoved(repositoryID: repository.id, offsets, destination))
+        }
       }
-      .animation(.easeOut(duration: 0.2), value: rows.map(\.id))
+      .animation(.easeOut(duration: 0.2), value: rowIDs)
     }
   }
 
@@ -36,6 +76,7 @@ struct WorktreeRowsView: View {
   private func rowView(
     _ row: WorktreeRowModel,
     isRepositoryRemoving: Bool,
+    moveDisabled: Bool,
     shortcutHint: String?
   ) -> some View {
     let taskStatus = terminalManager.focusedTaskStatus(for: row.id)
@@ -58,6 +99,7 @@ struct WorktreeRowsView: View {
       .tag(SidebarSelection.worktree(row.id))
       .listRowInsets(EdgeInsets())
       .transition(.opacity)
+      .moveDisabled(moveDisabled)
       .contextMenu {
         if !row.isMainWorktree {
           if row.isPinned {
@@ -97,6 +139,7 @@ struct WorktreeRowsView: View {
       .tag(SidebarSelection.worktree(row.id))
       .listRowInsets(EdgeInsets())
       .transition(.opacity)
+      .moveDisabled(moveDisabled)
       .disabled(isRepositoryRemoving)
     }
   }

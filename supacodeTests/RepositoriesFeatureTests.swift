@@ -115,6 +115,82 @@ struct RepositoriesFeatureTests {
     )
   }
 
+  @Test func orderedRepositoryRootsAppendMissing() {
+    let repoA = makeRepository(id: "/tmp/repo-a", worktrees: [])
+    let repoB = makeRepository(id: "/tmp/repo-b", worktrees: [])
+    var state = makeState(repositories: [repoA, repoB])
+    state.repositoryOrderIDs = [repoB.id]
+
+    expectNoDifference(
+      state.orderedRepositoryRoots().map { $0.path(percentEncoded: false) },
+      [
+        repoB.id,
+        repoA.id,
+      ]
+    )
+  }
+
+  @Test func orderedUnpinnedWorktreesPutMissingFirst() {
+    let repoRoot = "/tmp/repo"
+    let worktree1 = makeWorktree(id: "/tmp/repo/wt1", name: "wt1", repoRoot: repoRoot)
+    let worktree2 = makeWorktree(id: "/tmp/repo/wt2", name: "wt2", repoRoot: repoRoot)
+    let worktree3 = makeWorktree(id: "/tmp/repo/wt3", name: "wt3", repoRoot: repoRoot)
+    let repository = makeRepository(
+      id: repoRoot,
+      worktrees: [worktree1, worktree2, worktree3]
+    )
+    var state = makeState(repositories: [repository])
+    state.worktreeOrderByRepository[repoRoot] = [worktree2.id]
+
+    expectNoDifference(
+      state.orderedUnpinnedWorktreeIDs(in: repository),
+      [
+        worktree1.id,
+        worktree3.id,
+        worktree2.id,
+      ]
+    )
+  }
+
+  @Test func unpinnedWorktreeMoveUpdatesOrder() async {
+    let repoRoot = "/tmp/repo"
+    let worktree1 = makeWorktree(id: "/tmp/repo/wt1", name: "wt1", repoRoot: repoRoot)
+    let worktree2 = makeWorktree(id: "/tmp/repo/wt2", name: "wt2", repoRoot: repoRoot)
+    let worktree3 = makeWorktree(id: "/tmp/repo/wt3", name: "wt3", repoRoot: repoRoot)
+    let repository = makeRepository(
+      id: repoRoot,
+      worktrees: [worktree1, worktree2, worktree3]
+    )
+    var state = makeState(repositories: [repository])
+    state.worktreeOrderByRepository[repoRoot] = [worktree1.id, worktree2.id, worktree3.id]
+    let store = TestStore(initialState: state) {
+      RepositoriesFeature()
+    }
+
+    await store.send(.unpinnedWorktreesMoved(repositoryID: repoRoot, IndexSet(integer: 0), 3)) {
+      $0.worktreeOrderByRepository[repoRoot] = [worktree2.id, worktree3.id, worktree1.id]
+    }
+  }
+
+  @Test func pinnedWorktreeMoveUpdatesSubsetOrder() async {
+    let repoA = "/tmp/repo-a"
+    let repoB = "/tmp/repo-b"
+    let worktreeA1 = makeWorktree(id: "/tmp/repo-a/wt1", name: "wt1", repoRoot: repoA)
+    let worktreeA2 = makeWorktree(id: "/tmp/repo-a/wt2", name: "wt2", repoRoot: repoA)
+    let worktreeB1 = makeWorktree(id: "/tmp/repo-b/wt1", name: "wt1", repoRoot: repoB)
+    let repositoryA = makeRepository(id: repoA, worktrees: [worktreeA1, worktreeA2])
+    let repositoryB = makeRepository(id: repoB, worktrees: [worktreeB1])
+    var state = makeState(repositories: [repositoryA, repositoryB])
+    state.pinnedWorktreeIDs = [worktreeA1.id, worktreeB1.id, worktreeA2.id]
+    let store = TestStore(initialState: state) {
+      RepositoriesFeature()
+    }
+
+    await store.send(.pinnedWorktreesMoved(repositoryID: repoA, IndexSet(integer: 1), 0)) {
+      $0.pinnedWorktreeIDs = [worktreeA2.id, worktreeB1.id, worktreeA1.id]
+    }
+  }
+
   @Test func loadRepositoriesFailureKeepsPreviousState() async {
     let repository = makeRepository(id: "/tmp/repo", worktrees: [])
     let store = TestStore(initialState: makeState(repositories: [repository])) {

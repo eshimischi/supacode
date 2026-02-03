@@ -12,10 +12,10 @@ struct SidebarListView: View {
       set: { store.send(.selectWorktree($0?.worktreeID)) }
     )
     let state = store.state
-    let repositoryRoots = state.repositoryRoots
+    let orderedRoots = state.orderedRepositoryRoots()
     let repositoriesByID = Dictionary(uniqueKeysWithValues: store.repositories.map { ($0.id, $0) })
     List(selection: selection) {
-      if repositoryRoots.isEmpty {
+      if orderedRoots.isEmpty {
         ForEach(store.repositories) { repository in
           RepositorySectionView(
             repository: repository,
@@ -25,7 +25,7 @@ struct SidebarListView: View {
           )
         }
       } else {
-        ForEach(repositoryRoots, id: \.self) { rootURL in
+        ForEach(orderedRoots, id: \.self) { rootURL in
           let repositoryID = rootURL.standardizedFileURL.path(percentEncoded: false)
           if let failureMessage = state.loadFailuresByID[repositoryID] {
             let name = Repository.name(for: rootURL.standardizedFileURL)
@@ -51,6 +51,9 @@ struct SidebarListView: View {
               terminalManager: terminalManager
             )
           }
+        }
+        .onMove { offsets, destination in
+          store.send(.repositoriesMoved(offsets, destination))
         }
       }
     }
