@@ -139,7 +139,7 @@ enum OpenWorktreeAction: CaseIterable, Identifiable {
   static let defaultPriority: [OpenWorktreeAction] =
     editorPriority + [.xcode, .finder] + terminalPriority + gitClientPriority
   static let menuOrder: [OpenWorktreeAction] =
-    [.editor] + editorPriority + [.xcode] + [.finder] + terminalPriority + gitClientPriority
+    editorPriority + [.xcode] + [.finder] + terminalPriority + gitClientPriority + [.editor]
 
   static func normalizedDefaultEditorID(_ settingsID: String?) -> String {
     guard let settingsID, settingsID != automaticSettingsID else {
