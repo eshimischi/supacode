@@ -9,6 +9,7 @@ final class WorktreeTerminalManager {
   private var notificationsEnabled = true
   private var lastNotificationIndicatorCount: Int?
   private var eventContinuation: AsyncStream<TerminalClient.Event>.Continuation?
+  private var pendingEvents: [TerminalClient.Event] = []
   var selectedWorktreeID: Worktree.ID?
 
   init(runtime: GhosttyRuntime) {
@@ -19,6 +20,9 @@ final class WorktreeTerminalManager {
     switch command {
     case .createTab(let worktree, let runSetupScriptIfNew):
       Task { createTabAsync(in: worktree, runSetupScriptIfNew: runSetupScriptIfNew) }
+    case .ensureInitialTab(let worktree, let runSetupScriptIfNew, let focusing):
+      let state = state(for: worktree) { runSetupScriptIfNew }
+      state.ensureInitialTab(focusing: focusing)
     case .runScript(let worktree, let script):
       _ = state(for: worktree).runScript(script)
     case .stopRunScript(let worktree):
@@ -53,6 +57,16 @@ final class WorktreeTerminalManager {
     let (stream, continuation) = AsyncStream.makeStream(of: TerminalClient.Event.self)
     eventContinuation = continuation
     lastNotificationIndicatorCount = nil
+    if !pendingEvents.isEmpty {
+      let bufferedEvents = pendingEvents
+      pendingEvents.removeAll()
+      for event in bufferedEvents {
+        if case .notificationIndicatorChanged = event {
+          continue
+        }
+        continuation.yield(event)
+      }
+    }
     emitNotificationIndicatorCountIfNeeded()
     return stream
   }
@@ -97,6 +111,9 @@ final class WorktreeTerminalManager {
     }
     state.onRunScriptStatusChanged = { [weak self] isRunning in
       self?.emit(.runScriptStatusChanged(worktreeID: worktree.id, isRunning: isRunning))
+    }
+    state.onSetupScriptConsumed = { [weak self] in
+      self?.emit(.setupScriptConsumed(worktreeID: worktree.id))
     }
     states[worktree.id] = state
     return state
@@ -168,7 +185,11 @@ final class WorktreeTerminalManager {
   }
 
   private func emit(_ event: TerminalClient.Event) {
-    eventContinuation?.yield(event)
+    guard let eventContinuation else {
+      pendingEvents.append(event)
+      return
+    }
+    eventContinuation.yield(event)
   }
 
   private func emitNotificationIndicatorCountIfNeeded() {

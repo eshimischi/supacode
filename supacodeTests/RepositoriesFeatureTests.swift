@@ -452,6 +452,7 @@ struct RepositoriesFeatureTests {
     await store.receive(\.reloadRepositories)
     await store.receive(\.delegate.repositoriesChanged)
     await store.receive(\.delegate.selectedWorktreeChanged)
+    await store.receive(\.delegate.worktreeCreated)
     await store.receive(\.repositoriesLoaded) {
       $0.isInitialLoadComplete = true
     }

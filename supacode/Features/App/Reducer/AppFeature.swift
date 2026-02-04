@@ -135,6 +135,19 @@ struct AppFeature {
           .send(.worktreeSettingsLoaded(settings, worktreeID: worktreeID))
         )
 
+      case .repositories(.delegate(.worktreeCreated(let worktree))):
+        let shouldRunSetupScript =
+          state.repositories.pendingSetupScriptWorktreeIDs.contains(worktree.id)
+        return .run { _ in
+          await terminalClient.send(
+            .ensureInitialTab(
+              worktree,
+              runSetupScriptIfNew: shouldRunSetupScript,
+              focusing: false
+            )
+          )
+        }
+
       case .repositories(.delegate(.repositoriesChanged(let repositories))):
         let ids = Set(repositories.flatMap { $0.worktrees.map(\.id) })
         let worktrees = repositories.flatMap(\.worktrees)
@@ -299,15 +312,9 @@ struct AppFeature {
         }
         analyticsClient.capture("terminal_tab_created", nil)
         let shouldRunSetupScript = state.repositories.pendingSetupScriptWorktreeIDs.contains(worktree.id)
-        var effects: [Effect<Action>] = [
-          .run { _ in
-            await terminalClient.send(.createTab(worktree, runSetupScriptIfNew: shouldRunSetupScript))
-          },
-        ]
-        if shouldRunSetupScript {
-          effects.append(.send(.repositories(.consumeSetupScript(worktree.id))))
+        return .run { _ in
+          await terminalClient.send(.createTab(worktree, runSetupScriptIfNew: shouldRunSetupScript))
         }
-        return .merge(effects)
 
       case .runScript:
         guard let worktree = state.repositories.worktree(for: state.repositories.selectedWorktreeID) else {
@@ -470,6 +477,9 @@ struct AppFeature {
           state.runScriptStatusByWorktreeID.removeValue(forKey: worktreeID)
         }
         return .none
+
+      case .terminalEvent(.setupScriptConsumed(let worktreeID)):
+        return .send(.repositories(.consumeSetupScript(worktreeID)))
 
       case .terminalEvent:
         return .none

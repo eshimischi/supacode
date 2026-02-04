@@ -18,6 +18,7 @@ final class WorktreeTerminalState {
   private var tabIsRunningById: [TerminalTabID: Bool] = [:]
   private var runScriptTabId: TerminalTabID?
   private var pendingSetupScript: Bool
+  private var isEnsuringInitialTab = false
   private var lastReportedTaskStatus: WorktreeTaskStatus?
   private var lastEmittedFocusSurfaceId: UUID?
   var notifications: [WorktreeTerminalNotification] = []
@@ -31,6 +32,7 @@ final class WorktreeTerminalState {
   var onFocusChanged: ((UUID) -> Void)?
   var onTaskStatusChanged: ((WorktreeTaskStatus) -> Void)?
   var onRunScriptStatusChanged: ((Bool) -> Void)?
+  var onSetupScriptConsumed: (() -> Void)?
 
   init(runtime: GhosttyRuntime, worktree: Worktree, runSetupScript: Bool = false) {
     self.runtime = runtime
@@ -56,17 +58,21 @@ final class WorktreeTerminalState {
   }
 
   func ensureInitialTab(focusing: Bool) {
-    if tabManager.tabs.isEmpty {
-      Task {
-        let setupScript: String?
-        if pendingSetupScript {
-          setupScript = repositorySettings.setupScript
-        } else {
-          setupScript = nil
-        }
-        await MainActor.run {
+    guard tabManager.tabs.isEmpty else { return }
+    guard !isEnsuringInitialTab else { return }
+    isEnsuringInitialTab = true
+    Task {
+      let setupScript: String?
+      if pendingSetupScript {
+        setupScript = repositorySettings.setupScript
+      } else {
+        setupScript = nil
+      }
+      await MainActor.run {
+        if tabManager.tabs.isEmpty {
           _ = createTab(focusing: focusing, setupScript: setupScript)
         }
+        isEnsuringInitialTab = false
       }
     }
   }
@@ -75,16 +81,21 @@ final class WorktreeTerminalState {
   func createTab(focusing: Bool = true, setupScript: String? = nil) -> TerminalTabID? {
     let title = "\(worktree.name) \(nextTabIndex())"
     let resolvedInput = setupScriptInput(setupScript: setupScript)
-    if pendingSetupScript, setupScript != nil {
+    let shouldConsumeSetupScript = pendingSetupScript && setupScript != nil
+    if shouldConsumeSetupScript {
       pendingSetupScript = false
     }
-    return createTab(
+    let tabId = createTab(
       title: title,
       icon: "terminal",
       isTitleLocked: false,
       initialInput: resolvedInput,
       focusing: focusing
     )
+    if shouldConsumeSetupScript, tabId != nil {
+      onSetupScriptConsumed?()
+    }
+    return tabId
   }
 
   @discardableResult

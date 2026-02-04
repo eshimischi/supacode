@@ -122,6 +122,7 @@ struct RepositoriesFeature {
     case selectedWorktreeChanged(Worktree?)
     case repositoriesChanged(IdentifiedArrayOf<Repository>)
     case openRepositorySettings(Repository.ID)
+    case worktreeCreated(Worktree)
   }
 
   @Dependency(\.analyticsClient) private var analyticsClient
@@ -504,7 +505,8 @@ struct RepositoriesFeature {
         return .merge(
           .send(.reloadRepositories(animated: false)),
           .send(.delegate(.repositoriesChanged(state.repositories))),
-          .send(.delegate(.selectedWorktreeChanged(state.worktree(for: state.selectedWorktreeID))))
+          .send(.delegate(.selectedWorktreeChanged(state.worktree(for: state.selectedWorktreeID)))),
+          .send(.delegate(.worktreeCreated(worktree)))
         )
 
       case .createRandomWorktreeFailed(
