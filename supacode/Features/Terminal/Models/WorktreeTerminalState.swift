@@ -150,6 +150,15 @@ final class WorktreeTerminalState {
     focusSurface(in: tabId)
   }
 
+  func focusAndInsertText(_ text: String) {
+    guard let tabId = tabManager.selectedTabId,
+      let focusedId = focusedSurfaceIdByTab[tabId],
+      let surface = surfaces[focusedId]
+    else { return }
+    surface.requestFocus()
+    surface.insertText(text, replacementRange: NSRange(location: 0, length: 0))
+  }
+
   func syncFocus(windowIsKey: Bool) {
     let selectedTabId = tabManager.selectedTabId
     for (tabId, tree) in trees {

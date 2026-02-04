@@ -77,5 +77,25 @@ struct SidebarListView: View {
       store.send(.openRepositories(fileURLs))
       return true
     }
+    .onKeyPress { keyPress in
+      guard !keyPress.characters.isEmpty else { return .ignored }
+      let isNavigationKey =
+        keyPress.key == .upArrow
+        || keyPress.key == .downArrow
+        || keyPress.key == .leftArrow
+        || keyPress.key == .rightArrow
+        || keyPress.key == .home
+        || keyPress.key == .end
+        || keyPress.key == .pageUp
+        || keyPress.key == .pageDown
+      if isNavigationKey { return .ignored }
+      let hasCommandModifier = keyPress.modifiers.contains(.command)
+      if hasCommandModifier { return .ignored }
+      guard let worktreeID = store.selectedWorktreeID,
+        let terminalState = terminalManager.stateIfExists(for: worktreeID)
+      else { return .ignored }
+      terminalState.focusAndInsertText(keyPress.characters)
+      return .handled
+    }
   }
 }
