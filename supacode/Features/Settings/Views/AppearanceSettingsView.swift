@@ -5,6 +5,7 @@ struct AppearanceSettingsView: View {
   @Bindable var store: StoreOf<SettingsFeature>
 
   var body: some View {
+    let editorOptions = OpenWorktreeAction.editorPriority.filter(\.isInstalled)
     VStack(alignment: .leading) {
       Form {
         Section("Appearance") {
@@ -19,6 +20,20 @@ struct AppearanceSettingsView: View {
               }
             }
           }
+        }
+        Section("Default Editor") {
+          Picker(
+            "Default editor",
+            selection: $store.defaultEditorID
+          ) {
+            Text("Automatic")
+              .tag(OpenWorktreeAction.automaticSettingsID)
+            ForEach(editorOptions) { action in
+              Text(action.labelTitle)
+                .tag(action.settingsID)
+            }
+          }
+          .help("Applies to worktrees without repository overrides.")
         }
         Section("Quit") {
           Toggle(

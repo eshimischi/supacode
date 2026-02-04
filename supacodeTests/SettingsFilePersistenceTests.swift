@@ -105,6 +105,7 @@ struct SettingsFilePersistenceTests {
     #expect(settings.global.notificationSoundEnabled == true)
     #expect(settings.global.githubIntegrationEnabled == true)
     #expect(settings.global.deleteBranchOnArchive == true)
+    #expect(settings.global.defaultEditorID == OpenWorktreeAction.automaticSettingsID)
     #expect(settings.repositoryRoots.isEmpty)
     #expect(settings.pinnedWorktreeIDs.isEmpty)
   }

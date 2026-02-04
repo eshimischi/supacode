@@ -136,11 +136,21 @@ enum OpenWorktreeAction: CaseIterable, Identifiable {
   static let menuOrder: [OpenWorktreeAction] =
     editorPriority + [.xcode] + [.finder] + terminalPriority + gitClientPriority
 
-  static func fromSettingsID(_ settingsID: String?) -> OpenWorktreeAction {
-    guard let settingsID, settingsID != automaticSettingsID else {
-      return preferredDefault()
+  static func fromSettingsID(
+    _ settingsID: String?,
+    defaultEditorID: String?
+  ) -> OpenWorktreeAction {
+    if let settingsID, settingsID != automaticSettingsID,
+      let action = allCases.first(where: { $0.settingsID == settingsID })
+    {
+      return action
     }
-    return allCases.first(where: { $0.settingsID == settingsID }) ?? preferredDefault()
+    if let defaultEditorID, defaultEditorID != automaticSettingsID,
+      let action = editorPriority.first(where: { $0.settingsID == defaultEditorID })
+    {
+      return action
+    }
+    return preferredDefault()
   }
 
   static var availableCases: [OpenWorktreeAction] {

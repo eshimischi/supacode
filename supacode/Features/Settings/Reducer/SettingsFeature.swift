@@ -7,6 +7,7 @@ struct SettingsFeature {
   @ObservableState
   struct State: Equatable {
     var appearanceMode: AppearanceMode
+    var defaultEditorID: String
     var confirmBeforeQuit: Bool
     var updatesAutomaticallyCheckForUpdates: Bool
     var updatesAutomaticallyDownloadUpdates: Bool
@@ -21,6 +22,7 @@ struct SettingsFeature {
 
     init(settings: GlobalSettings = .default) {
       appearanceMode = settings.appearanceMode
+      defaultEditorID = settings.defaultEditorID
       confirmBeforeQuit = settings.confirmBeforeQuit
       updatesAutomaticallyCheckForUpdates = settings.updatesAutomaticallyCheckForUpdates
       updatesAutomaticallyDownloadUpdates = settings.updatesAutomaticallyDownloadUpdates
@@ -35,6 +37,7 @@ struct SettingsFeature {
     var globalSettings: GlobalSettings {
       GlobalSettings(
         appearanceMode: appearanceMode,
+        defaultEditorID: defaultEditorID,
         confirmBeforeQuit: confirmBeforeQuit,
         updatesAutomaticallyCheckForUpdates: updatesAutomaticallyCheckForUpdates,
         updatesAutomaticallyDownloadUpdates: updatesAutomaticallyDownloadUpdates,
@@ -74,6 +77,7 @@ struct SettingsFeature {
 
       case .settingsLoaded(let settings):
         state.appearanceMode = settings.appearanceMode
+        state.defaultEditorID = settings.defaultEditorID
         state.confirmBeforeQuit = settings.confirmBeforeQuit
         state.updatesAutomaticallyCheckForUpdates = settings.updatesAutomaticallyCheckForUpdates
         state.updatesAutomaticallyDownloadUpdates = settings.updatesAutomaticallyDownloadUpdates

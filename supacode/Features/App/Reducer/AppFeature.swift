@@ -214,6 +214,14 @@ struct AppFeature {
           settings.dockBadgeEnabled
           ? (state.notificationIndicatorCount == 0 ? nil : String(state.notificationIndicatorCount))
           : nil
+        if let selectedWorktree = state.repositories.worktree(for: state.repositories.selectedWorktreeID) {
+          let rootURL = selectedWorktree.repositoryRootURL
+          @Shared(.repositorySettings(rootURL)) var repositorySettings
+          state.openActionSelection = OpenWorktreeAction.fromSettingsID(
+            repositorySettings.openActionID,
+            defaultEditorID: settings.defaultEditorID
+          )
+        }
         return .merge(
           .send(.repositories(.setGithubIntegrationEnabled(settings.githubIntegrationEnabled))),
           .send(
@@ -418,7 +426,10 @@ struct AppFeature {
         guard state.repositories.selectedWorktreeID == worktreeID else {
           return .none
         }
-        state.openActionSelection = OpenWorktreeAction.fromSettingsID(settings.openActionID)
+        state.openActionSelection = OpenWorktreeAction.fromSettingsID(
+          settings.openActionID,
+          defaultEditorID: state.settings.defaultEditorID
+        )
         state.selectedRunScript = settings.runScript
         return .none
 
