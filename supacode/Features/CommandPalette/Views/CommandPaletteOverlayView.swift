@@ -1,3 +1,4 @@
+import AppKit
 import ComposableArchitecture
 import SwiftUI
 
@@ -231,14 +232,14 @@ private struct CommandPaletteQuery: View {
         } label: {
           Color.clear
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
         .keyboardShortcut(.upArrow, modifiers: [])
         Button {
           onEvent?(.move(.down))
         } label: {
           Color.clear
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
         .keyboardShortcut(.downArrow, modifiers: [])
 
         Button {
@@ -246,22 +247,15 @@ private struct CommandPaletteQuery: View {
         } label: {
           Color.clear
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
         .keyboardShortcut(.init("p"), modifiers: [.control])
         Button {
           onEvent?(.move(.down))
         } label: {
           Color.clear
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
         .keyboardShortcut(.init("n"), modifiers: [.control])
-        Button {
-          onEvent?(.submit)
-        } label: {
-          Color.clear
-        }
-        .buttonStyle(PlainButtonStyle())
-        .keyboardShortcut(.return, modifiers: [])
       }
       .frame(width: 0, height: 0)
       .accessibilityHidden(true)
@@ -272,7 +266,7 @@ private struct CommandPaletteQuery: View {
         .frame(height: 48)
         .textFieldStyle(.plain)
         .focused($isTextFieldFocused)
-        .onChange(of: isTextFieldFocused) { focused in
+        .onChange(of: isTextFieldFocused) { _, focused in
           if !focused {
             onEvent?(.exit)
           }
