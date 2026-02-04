@@ -151,6 +151,27 @@ struct CommandPaletteFeatureTests {
     #expect(selectItem?.subtitle == nil)
   }
 
+  @Test func commandPaletteItems_stripsPathFromWorktreeName() {
+    let rootPath = "/tmp/repo"
+    let worktree = makeWorktree(
+      id: "\(rootPath)/wt-path",
+      name: "khoi/cache",
+      detail: "main",
+      repoRoot: rootPath
+    )
+    let repository = makeRepository(rootPath: rootPath, name: "Repo", worktrees: [worktree])
+    let items = CommandPaletteFeature.commandPaletteItems(
+      from: RepositoriesFeature.State(repositories: [repository])
+    )
+    let selectItem = items.first {
+      if case .worktreeSelect(let id) = $0.kind {
+        return id == worktree.id
+      }
+      return false
+    }
+    #expect(selectItem?.title == "Repo / cache")
+  }
+
   @Test func commandPaletteItems_respectsRowOrderWithinRepository() {
     let rootPath = "/tmp/repo"
     let main = makeWorktree(

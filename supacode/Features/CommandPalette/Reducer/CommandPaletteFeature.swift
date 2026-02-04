@@ -130,7 +130,8 @@ struct CommandPaletteFeature {
     for row in repositories.orderedWorktreeRows() {
       guard !row.isPending, !row.isDeleting else { continue }
       let repositoryName = repositories.repositoryName(for: row.repositoryID) ?? "Repository"
-      let title = "\(repositoryName) / \(row.name)"
+      let displayName = row.name.split(separator: "/").last.map(String.init) ?? row.name
+      let title = "\(repositoryName) / \(displayName)"
       let trimmedDetail = row.detail.trimmingCharacters(in: .whitespacesAndNewlines)
       let detail = trimmedDetail.isEmpty ? nil : trimmedDetail
       items.append(
