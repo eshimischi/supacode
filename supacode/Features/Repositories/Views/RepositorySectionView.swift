@@ -28,7 +28,7 @@ struct RepositorySectionView: View {
     let openRepoSettings = {
       _ = store.send(.openRepositorySettings(repository.id))
     }
-    Section {
+    Section(isExpanded: isExpandedBinding) {
       WorktreeRowsView(
         repository: repository,
         isExpanded: isExpanded,
@@ -36,53 +36,48 @@ struct RepositorySectionView: View {
         terminalManager: terminalManager
       )
     } header: {
-      DisclosureGroup(isExpanded: isExpandedBinding) {
-        EmptyView()
-      } label: {
-        HStack {
-          RepoHeaderRow(
-            name: repository.name,
-            isRemoving: isRemovingRepository
-          )
-          .frame(maxWidth: .infinity, alignment: .leading)
-          if isRemovingRepository {
-            ProgressView()
-              .controlSize(.small)
-          }
-          Menu {
-            Button("Repo Settings") {
-              openRepoSettings()
-            }
-            .help("Repo Settings ")
-            Button("Remove Repository") {
-              store.send(.requestRemoveRepository(repository.id))
-            }
-            .help("Remove repository ")
-            .disabled(isRemovingRepository)
-          } label: {
-            Label("Repository options", systemImage: "ellipsis")
-              .labelStyle(.iconOnly)
-              .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-          .foregroundStyle(.primary)
-          .help("Repository options ")
-          .disabled(isRemovingRepository)
-          Button {
-            store.send(.createRandomWorktreeInRepository(repository.id))
-          } label: {
-            Label("New Worktree", systemImage: "plus")
-              .labelStyle(.iconOnly)
-              .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-          .foregroundStyle(.primary)
-          .padding(.trailing, 6)
-          .help("New Worktree (\(AppShortcuts.newWorktree.display))")
-          .disabled(isRemovingRepository)
+      HStack {
+        RepoHeaderRow(
+          name: repository.name,
+          isRemoving: isRemovingRepository
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
+        if isRemovingRepository {
+          ProgressView()
+            .controlSize(.small)
         }
-        .contentShape(.rect)
+        Menu {
+          Button("Repo Settings") {
+            openRepoSettings()
+          }
+          .help("Repo Settings ")
+          Button("Remove Repository") {
+            store.send(.requestRemoveRepository(repository.id))
+          }
+          .help("Remove repository ")
+          .disabled(isRemovingRepository)
+        } label: {
+          Label("Repository options", systemImage: "ellipsis")
+            .labelStyle(.iconOnly)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .help("Repository options ")
+        .disabled(isRemovingRepository)
+        Button {
+          store.send(.createRandomWorktreeInRepository(repository.id))
+        } label: {
+          Label("New Worktree", systemImage: "plus")
+            .labelStyle(.iconOnly)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .help("New Worktree (\(AppShortcuts.newWorktree.display))")
+        .disabled(isRemovingRepository)
       }
+      .contentShape(.rect)
       .contextMenu {
         Button("Repo Settings") {
           openRepoSettings()
