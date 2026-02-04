@@ -19,6 +19,8 @@ struct SettingsFeatureTests {
       inAppNotificationsEnabled: false,
       dockBadgeEnabled: false,
       notificationSoundEnabled: true,
+      analyticsEnabled: false,
+      crashReportsEnabled: true,
       githubIntegrationEnabled: true,
       deleteBranchOnDeleteWorktree: false,
       automaticallyArchiveMergedWorktrees: true
@@ -40,6 +42,8 @@ struct SettingsFeatureTests {
       $0.inAppNotificationsEnabled = false
       $0.dockBadgeEnabled = false
       $0.notificationSoundEnabled = true
+      $0.analyticsEnabled = false
+      $0.crashReportsEnabled = true
       $0.githubIntegrationEnabled = true
       $0.deleteBranchOnDeleteWorktree = false
       $0.automaticallyArchiveMergedWorktrees = true
@@ -57,6 +61,8 @@ struct SettingsFeatureTests {
       inAppNotificationsEnabled: false,
       dockBadgeEnabled: true,
       notificationSoundEnabled: false,
+      analyticsEnabled: true,
+      crashReportsEnabled: false,
       githubIntegrationEnabled: true,
       deleteBranchOnDeleteWorktree: true,
       automaticallyArchiveMergedWorktrees: false
@@ -80,6 +86,8 @@ struct SettingsFeatureTests {
       inAppNotificationsEnabled: initialSettings.inAppNotificationsEnabled,
       dockBadgeEnabled: initialSettings.dockBadgeEnabled,
       notificationSoundEnabled: initialSettings.notificationSoundEnabled,
+      analyticsEnabled: initialSettings.analyticsEnabled,
+      crashReportsEnabled: initialSettings.crashReportsEnabled,
       githubIntegrationEnabled: initialSettings.githubIntegrationEnabled,
       deleteBranchOnDeleteWorktree: initialSettings.deleteBranchOnDeleteWorktree,
       automaticallyArchiveMergedWorktrees: initialSettings.automaticallyArchiveMergedWorktrees
@@ -126,6 +134,8 @@ struct SettingsFeatureTests {
       inAppNotificationsEnabled: false,
       dockBadgeEnabled: false,
       notificationSoundEnabled: false,
+      analyticsEnabled: true,
+      crashReportsEnabled: false,
       githubIntegrationEnabled: true,
       deleteBranchOnDeleteWorktree: true,
       automaticallyArchiveMergedWorktrees: true
@@ -140,6 +150,8 @@ struct SettingsFeatureTests {
       $0.inAppNotificationsEnabled = false
       $0.dockBadgeEnabled = false
       $0.notificationSoundEnabled = false
+      $0.analyticsEnabled = true
+      $0.crashReportsEnabled = false
       $0.githubIntegrationEnabled = true
       $0.deleteBranchOnDeleteWorktree = true
       $0.automaticallyArchiveMergedWorktrees = true

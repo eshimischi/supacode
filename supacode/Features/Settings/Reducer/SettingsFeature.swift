@@ -1,6 +1,5 @@
 import ComposableArchitecture
 import Foundation
-import PostHog
 
 @Reducer
 struct SettingsFeature {
@@ -14,6 +13,8 @@ struct SettingsFeature {
     var inAppNotificationsEnabled: Bool
     var dockBadgeEnabled: Bool
     var notificationSoundEnabled: Bool
+    var analyticsEnabled: Bool
+    var crashReportsEnabled: Bool
     var githubIntegrationEnabled: Bool
     var deleteBranchOnDeleteWorktree: Bool
     var automaticallyArchiveMergedWorktrees: Bool
@@ -30,6 +31,8 @@ struct SettingsFeature {
       inAppNotificationsEnabled = settings.inAppNotificationsEnabled
       dockBadgeEnabled = settings.dockBadgeEnabled
       notificationSoundEnabled = settings.notificationSoundEnabled
+      analyticsEnabled = settings.analyticsEnabled
+      crashReportsEnabled = settings.crashReportsEnabled
       githubIntegrationEnabled = settings.githubIntegrationEnabled
       deleteBranchOnDeleteWorktree = settings.deleteBranchOnDeleteWorktree
       automaticallyArchiveMergedWorktrees = settings.automaticallyArchiveMergedWorktrees
@@ -45,6 +48,8 @@ struct SettingsFeature {
         inAppNotificationsEnabled: inAppNotificationsEnabled,
         dockBadgeEnabled: dockBadgeEnabled,
         notificationSoundEnabled: notificationSoundEnabled,
+        analyticsEnabled: analyticsEnabled,
+        crashReportsEnabled: crashReportsEnabled,
         githubIntegrationEnabled: githubIntegrationEnabled,
         deleteBranchOnDeleteWorktree: deleteBranchOnDeleteWorktree,
         automaticallyArchiveMergedWorktrees: automaticallyArchiveMergedWorktrees
@@ -96,16 +101,20 @@ struct SettingsFeature {
         state.inAppNotificationsEnabled = normalizedSettings.inAppNotificationsEnabled
         state.dockBadgeEnabled = normalizedSettings.dockBadgeEnabled
         state.notificationSoundEnabled = normalizedSettings.notificationSoundEnabled
+        state.analyticsEnabled = normalizedSettings.analyticsEnabled
+        state.crashReportsEnabled = normalizedSettings.crashReportsEnabled
         state.githubIntegrationEnabled = normalizedSettings.githubIntegrationEnabled
         state.deleteBranchOnDeleteWorktree = normalizedSettings.deleteBranchOnDeleteWorktree
         state.automaticallyArchiveMergedWorktrees = normalizedSettings.automaticallyArchiveMergedWorktrees
         return .send(.delegate(.settingsChanged(normalizedSettings)))
 
       case .binding:
-        analyticsClient.capture("settings_changed", nil)
         let settings = state.globalSettings
         @Shared(.settingsFile) var settingsFile
         $settingsFile.withLock { $0.global = settings }
+        if settings.analyticsEnabled {
+          analyticsClient.capture("settings_changed", nil)
+        }
         return .send(.delegate(.settingsChanged(settings)))
 
       case .setSelection(let selection):

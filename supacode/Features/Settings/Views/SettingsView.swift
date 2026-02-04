@@ -37,6 +37,8 @@ struct SettingsView: View {
             .tag(SettingsSection.worktree)
           Label("Updates", systemImage: "arrow.down.circle")
             .tag(SettingsSection.updates)
+          Label("Advanced", systemImage: "gearshape.2")
+            .tag(SettingsSection.advanced)
           Label("GitHub", systemImage: "arrow.triangle.branch")
             .tag(SettingsSection.github)
 
@@ -77,6 +79,12 @@ struct SettingsView: View {
           UpdatesSettingsView(settingsStore: settingsStore, updatesStore: updatesStore)
             .navigationTitle("Updates")
             .navigationSubtitle("Update preferences")
+        }
+      case .advanced:
+        SettingsDetailView {
+          AdvancedSettingsView(store: settingsStore)
+            .navigationTitle("Advanced")
+            .navigationSubtitle("Analytics and diagnostics")
         }
       case .github:
         SettingsDetailView {
