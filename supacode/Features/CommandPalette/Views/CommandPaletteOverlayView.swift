@@ -75,52 +75,19 @@ struct CommandPaletteOverlayView: View {
   }
 
   private func updateSelection(rows: [CommandPaletteItem]) {
-    let count = rows.count
-    if count == 0 {
-      if store.selectedIndex != nil {
-        store.selectedIndex = nil
-      }
-      return
-    }
-    if let selectedIndex = store.selectedIndex, selectedIndex >= count {
-      store.selectedIndex = count - 1
-    } else if store.selectedIndex == nil {
-      store.selectedIndex = 0
-    }
+    store.send(.updateSelection(itemsCount: rows.count))
   }
 
   private func resetSelection(rows: [CommandPaletteItem]) {
-    if rows.isEmpty {
-      if store.selectedIndex != nil {
-        store.selectedIndex = nil
-      }
-      return
-    }
-    if store.selectedIndex != 0 {
-      store.selectedIndex = 0
-    }
+    store.send(.resetSelection(itemsCount: rows.count))
   }
 
   private func moveSelection(_ direction: MoveCommandDirection, rows: [CommandPaletteItem]) {
-    let count = rows.count
-    guard count > 0 else {
-      store.selectedIndex = nil
-      return
-    }
-    let maxIndex = count - 1
     switch direction {
     case .up:
-      if let selectedIndex = store.selectedIndex {
-        store.selectedIndex = selectedIndex == 0 ? maxIndex : selectedIndex - 1
-      } else {
-        store.selectedIndex = maxIndex
-      }
+      store.send(.moveSelection(.up, itemsCount: rows.count))
     case .down:
-      if let selectedIndex = store.selectedIndex {
-        store.selectedIndex = selectedIndex == maxIndex ? 0 : selectedIndex + 1
-      } else {
-        store.selectedIndex = 0
-      }
+      store.send(.moveSelection(.down, itemsCount: rows.count))
     default:
       break
     }

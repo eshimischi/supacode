@@ -10,11 +10,19 @@ struct CommandPaletteFeature {
     var selectedIndex: Int?
   }
 
+  enum SelectionMove: Equatable {
+    case up
+    case down
+  }
+
   enum Action: BindableAction, Equatable {
     case binding(BindingAction<State>)
     case setPresented(Bool)
     case togglePresented
     case activate(CommandPaletteItem.Kind)
+    case updateSelection(itemsCount: Int)
+    case resetSelection(itemsCount: Int)
+    case moveSelection(SelectionMove, itemsCount: Int)
     case delegate(Delegate)
   }
 
@@ -62,6 +70,44 @@ struct CommandPaletteFeature {
         state.query = ""
         state.selectedIndex = nil
         return .send(.delegate(delegateAction(for: kind)))
+
+      case .updateSelection(let itemsCount):
+        if itemsCount == 0 {
+          state.selectedIndex = nil
+          return .none
+        }
+        if let selectedIndex = state.selectedIndex, selectedIndex >= itemsCount {
+          state.selectedIndex = itemsCount - 1
+        } else if state.selectedIndex == nil {
+          state.selectedIndex = 0
+        }
+        return .none
+
+      case .resetSelection(let itemsCount):
+        state.selectedIndex = itemsCount == 0 ? nil : 0
+        return .none
+
+      case .moveSelection(let direction, let itemsCount):
+        guard itemsCount > 0 else {
+          state.selectedIndex = nil
+          return .none
+        }
+        let maxIndex = itemsCount - 1
+        switch direction {
+        case .up:
+          if let selectedIndex = state.selectedIndex {
+            state.selectedIndex = selectedIndex == 0 ? maxIndex : selectedIndex - 1
+          } else {
+            state.selectedIndex = maxIndex
+          }
+        case .down:
+          if let selectedIndex = state.selectedIndex {
+            state.selectedIndex = selectedIndex == maxIndex ? 0 : selectedIndex + 1
+          } else {
+            state.selectedIndex = 0
+          }
+        }
+        return .none
 
       case .delegate:
         return .none
