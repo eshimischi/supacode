@@ -13,30 +13,21 @@ struct RepositorySectionView: View {
     let state = store.state
     let isExpanded = expandedRepoIDs.contains(repository.id)
     let isRemovingRepository = state.isRemovingRepository(repository)
-    let isExpandedBinding = Binding(
-      get: { expandedRepoIDs.contains(repository.id) },
-      set: { isExpanded in
-        guard !isRemovingRepository else { return }
-        withAnimation(.easeOut(duration: 0.2)) {
-          if isExpanded {
-            expandedRepoIDs.insert(repository.id)
-          } else {
-            expandedRepoIDs.remove(repository.id)
-          }
-        }
-      }
-    )
     let openRepoSettings = {
       _ = store.send(.openRepositorySettings(repository.id))
     }
-    Section(isExpanded: isExpandedBinding) {
-      WorktreeRowsView(
-        repository: repository,
-        isExpanded: isExpanded,
-        store: store,
-        terminalManager: terminalManager
-      )
-    } header: {
+    let toggleExpanded = {
+      guard !isRemovingRepository else { return }
+      withAnimation(.easeOut(duration: 0.2)) {
+        if isExpanded {
+          expandedRepoIDs.remove(repository.id)
+        } else {
+          expandedRepoIDs.insert(repository.id)
+        }
+      }
+    }
+
+    Group {
       HStack {
         RepoHeaderRow(
           name: repository.name,
@@ -78,13 +69,26 @@ struct RepositorySectionView: View {
           }
           .buttonStyle(.plain)
           .foregroundStyle(.secondary)
-          .padding(.trailing, 4)
           .help("New Worktree (\(AppShortcuts.newWorktree.display))")
           .disabled(isRemovingRepository)
         }
+        Button {
+          toggleExpanded()
+        } label: {
+          Image(systemName: "chevron.right")
+            .rotationEffect(.degrees(isExpanded ? 90 : 0))
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .help(isExpanded ? "Collapse" : "Expand")
       }
       .onHover { isHovering = $0 }
       .contentShape(.rect)
+      .onTapGesture {
+        toggleExpanded()
+      }
       .contextMenu {
         Button("Repo Settings") {
           openRepoSettings()
@@ -99,6 +103,16 @@ struct RepositorySectionView: View {
       .contentShape(.dragPreview, .rect)
       .environment(\.colorScheme, colorScheme)
       .preferredColorScheme(colorScheme)
+      .selectionDisabled()
+
+      if isExpanded {
+        WorktreeRowsView(
+          repository: repository,
+          isExpanded: isExpanded,
+          store: store,
+          terminalManager: terminalManager
+        )
+      }
     }
   }
 }
