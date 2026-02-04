@@ -45,13 +45,11 @@ struct CommandPaletteFeatureTests {
     let items = CommandPaletteFeature.commandPaletteItems(from: state)
     let ids = items.map(\.id)
     #expect(ids.contains("worktree.\(keep.id).select"))
-    #expect(ids.contains("worktree.\(keep.id).archive"))
-    #expect(ids.contains("worktree.\(keep.id).remove"))
     #expect(ids.contains { $0.contains(deleting.id) } == false)
     #expect(ids.contains { $0.contains("wt-pending") } == false)
   }
 
-  @Test func commandPaletteItems_omitsArchiveAndRemoveForMainWorktree() {
+  @Test func commandPaletteItems_omitsSubActionsForMainWorktree() {
     let rootPath = "/tmp/repo"
     let main = makeWorktree(
       id: rootPath,
@@ -91,7 +89,7 @@ struct CommandPaletteFeatureTests {
     )
   }
 
-  @Test func commandPaletteItems_includesArchiveAndRemoveForNonMainWorktree() {
+  @Test func commandPaletteItems_omitsSubActionsForNonMainWorktree() {
     let rootPath = "/tmp/repo"
     let main = makeWorktree(
       id: rootPath,
@@ -113,19 +111,19 @@ struct CommandPaletteFeatureTests {
 
     #expect(
       items.contains {
-        if case .removeWorktree(let worktreeID, let repositoryID) = $0.kind {
-          return worktreeID == feature.id && repositoryID == repository.id
+        if case .removeWorktree = $0.kind {
+          return true
         }
         return false
-      }
+      } == false
     )
     #expect(
       items.contains {
-        if case .archiveWorktree(let worktreeID, let repositoryID) = $0.kind {
-          return worktreeID == feature.id && repositoryID == repository.id
+        if case .archiveWorktree = $0.kind {
+          return true
         }
         return false
-      }
+      } == false
     )
   }
 

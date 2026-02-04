@@ -128,24 +128,6 @@ struct CommandPaletteFeature {
           kind: .worktreeSelect(row.id)
         )
       )
-      if row.isRemovable, !row.isMainWorktree {
-        items.append(
-          CommandPaletteItem(
-            id: "worktree.\(row.id).archive",
-            title: title,
-            subtitle: detail,
-            kind: .archiveWorktree(row.id, row.repositoryID)
-          )
-        )
-        items.append(
-          CommandPaletteItem(
-            id: "worktree.\(row.id).remove",
-            title: title,
-            subtitle: detail,
-            kind: .removeWorktree(row.id, row.repositoryID)
-          )
-        )
-      }
     }
     return items
   }
