@@ -30,8 +30,6 @@ struct CommandPaletteOverlayView: View {
 
           GeometryReader { geometry in
             VStack {
-              Spacer()
-
               CommandPaletteCard(
                 query: $store.query,
                 selectedIndex: $store.selectedIndex,
@@ -57,9 +55,17 @@ struct CommandPaletteOverlayView: View {
                 isQueryFocused = store.isPresented
               }
 
-              Spacer()
+              Spacer(minLength: 0)
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
+            .frame(
+              width: geometry.size.width,
+              height: geometry.size.height,
+              alignment: .top
+            )
+            .padding(
+              .top,
+              max(0, geometry.size.height / 2 - CommandPaletteQuery.fieldHeight / 2)
+            )
           }
         }
       }
@@ -187,6 +193,8 @@ private enum CommandPaletteKeyboardEvent: Equatable {
 }
 
 private struct CommandPaletteQuery: View {
+  static let fieldHeight: CGFloat = 48
+
   @Binding var query: String
   var onEvent: ((CommandPaletteKeyboardEvent) -> Void)?
   @FocusState private var isTextFieldFocused: Bool
@@ -240,7 +248,7 @@ private struct CommandPaletteQuery: View {
       TextField("Execute a command…", text: $query)
         .padding()
         .font(.title3.weight(.light))
-        .frame(height: 48)
+        .frame(height: Self.fieldHeight)
         .textFieldStyle(.plain)
         .focused($isTextFieldFocused)
         .onChange(of: isTextFieldFocused) { _, focused in
