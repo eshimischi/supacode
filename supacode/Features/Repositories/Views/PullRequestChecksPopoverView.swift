@@ -79,13 +79,14 @@ struct PullRequestChecksPopoverView: View {
             .foregroundStyle(.green)
           deletionsText
             .foregroundStyle(.red)
+          if hasConflicts {
+            Text("•")
+              .foregroundStyle(.secondary)
+            Text("Merge Conflicts")
+              .foregroundStyle(.red)
+          }
         }
         .font(.subheadline)
-        if hasConflicts {
-          Text("Merge Conflicts")
-            .foregroundStyle(.red)
-            .font(.subheadline)
-        }
 
         if breakdown.total > 0 {
           HStack {
