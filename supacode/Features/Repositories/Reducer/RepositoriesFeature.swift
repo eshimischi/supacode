@@ -335,7 +335,7 @@ struct RepositoriesFeature {
         )
         if !invalidRoots.isEmpty {
           let message = invalidRoots.map { "\($0) is not a Git repository." }.joined(separator: "\n")
-          state.alert = errorAlert(
+          state.alert = messageAlert(
             title: "Some folders couldn't be opened",
             message: message
           )
@@ -397,14 +397,14 @@ struct RepositoriesFeature {
         guard let worktree = state.worktree(for: worktreeID) else { return .none }
         let trimmed = branchName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-          state.alert = errorAlert(
+          state.alert = messageAlert(
             title: "Branch name required",
             message: "Enter a branch name to rename."
           )
           return .none
         }
         guard !trimmed.contains(where: \.isWhitespace) else {
-          state.alert = errorAlert(
+          state.alert = messageAlert(
             title: "Branch name invalid",
             message: "Branch names can't contain spaces."
           )
@@ -438,21 +438,21 @@ struct RepositoriesFeature {
           } else {
             message = "Unable to resolve a repository for the new worktree."
           }
-          state.alert = errorAlert(title: "Unable to create worktree", message: message)
+          state.alert = messageAlert(title: "Unable to create worktree", message: message)
           return .none
         }
         return .send(.createRandomWorktreeInRepository(repository.id))
 
       case .createRandomWorktreeInRepository(let repositoryID):
         guard let repository = state.repositories[id: repositoryID] else {
-          state.alert = errorAlert(
+          state.alert = messageAlert(
             title: "Unable to create worktree",
             message: "Unable to resolve a repository for the new worktree."
           )
           return .none
         }
         if state.removingRepositoryIDs.contains(repository.id) {
-          state.alert = errorAlert(
+          state.alert = messageAlert(
             title: "Unable to create worktree",
             message: "This repository is being removed."
           )
@@ -572,7 +572,7 @@ struct RepositoriesFeature {
           name: name,
           state: &state
         )
-        state.alert = errorAlert(title: title, message: message)
+        state.alert = messageAlert(title: title, message: message)
         let selectedWorktree = state.worktree(for: state.selectedWorktreeID)
         let selectionChanged = selectionDidChange(
           previousSelectionID: previousSelection,
@@ -950,7 +950,7 @@ struct RepositoriesFeature {
 
       case .deleteWorktreeFailed(let message, let worktreeID):
         state.deletingWorktreeIDs.remove(worktreeID)
-        state.alert = errorAlert(title: "Unable to delete worktree", message: message)
+        state.alert = messageAlert(title: "Unable to delete worktree", message: message)
         return .none
 
       case .requestRemoveRepository(let repositoryID):
@@ -1121,7 +1121,7 @@ struct RepositoriesFeature {
         return .merge(effects)
 
       case .presentAlert(let title, let message):
-        state.alert = errorAlert(title: title, message: message)
+        state.alert = messageAlert(title: title, message: message)
         return .none
 
       case .worktreeNotificationReceived(let worktreeID):
@@ -1321,6 +1321,12 @@ struct RepositoriesFeature {
             }
             do {
               try await githubCLI.markPullRequestReady(worktreeRoot, pullRequest.number)
+              await send(
+                .presentAlert(
+                  title: "Pull request marked ready",
+                  message: "Supacode marked this pull request as ready for review."
+                )
+              )
             } catch {
               await send(
                 .presentAlert(
@@ -1348,6 +1354,12 @@ struct RepositoriesFeature {
             let strategy = repositorySettings.pullRequestMergeStrategy
             do {
               try await githubCLI.mergePullRequest(worktreeRoot, pullRequest.number, strategy)
+              await send(
+                .presentAlert(
+                  title: "Pull request merged",
+                  message: "Supacode merged this pull request."
+                )
+              )
             } catch {
               await send(
                 .presentAlert(
@@ -1631,7 +1643,7 @@ struct RepositoriesFeature {
     )
   }
 
-  private func errorAlert(title: String, message: String) -> AlertState<Alert> {
+  private func messageAlert(title: String, message: String) -> AlertState<Alert> {
     AlertState {
       TextState(title)
     } actions: {

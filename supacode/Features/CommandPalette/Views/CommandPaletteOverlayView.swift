@@ -266,7 +266,7 @@ private struct CommandPaletteQuery: View {
       .frame(width: 0, height: 0)
       .accessibilityHidden(true)
 
-      TextField("Search for actions or branchs...", text: $query)
+      TextField("Search for actions or branches...", text: $query)
         .padding()
         .font(.title3.weight(.light))
         .frame(height: Self.fieldHeight)
@@ -401,7 +401,7 @@ private struct CommandPaletteRowView: View {
         if let leadingIcon {
           Image(systemName: leadingIcon)
             .foregroundStyle(emphasis ? .primary : .secondary)
-            .font(.system(size: 14, weight: .medium))
+            .font(.subheadline.weight(.medium))
             .frame(width: 16, height: 16, alignment: .center)
             .accessibilityHidden(true)
         }
@@ -438,7 +438,7 @@ private struct CommandPaletteRowView: View {
       .padding(8)
       .contentShape(Rectangle())
       .background(rowBackground)
-      .cornerRadius(5)
+      .clipShape(.rect(cornerRadius: 5))
     }
     .buttonStyle(.plain)
     .help(helpText)
