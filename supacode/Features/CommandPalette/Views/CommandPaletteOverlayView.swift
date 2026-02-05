@@ -29,6 +29,12 @@ struct CommandPaletteOverlayView: View {
             .accessibilityLabel("Dismiss Command Palette")
 
           GeometryReader { geometry in
+            let topOffset = max(
+              0,
+              geometry.size.height * 0.3
+                - CommandPaletteQuery.fieldHeight / 2
+                - CommandPaletteCard.padding
+            )
             VStack {
               CommandPaletteCard(
                 query: $store.query,
@@ -62,10 +68,7 @@ struct CommandPaletteOverlayView: View {
               height: geometry.size.height,
               alignment: .top
             )
-            .padding(
-              .top,
-              max(0, geometry.size.height / 2 - CommandPaletteQuery.fieldHeight / 2)
-            )
+            .padding(.top, topOffset)
           }
         }
       }
@@ -129,6 +132,8 @@ struct CommandPaletteOverlayView: View {
 }
 
 private struct CommandPaletteCard: View {
+  static let padding: CGFloat = 16
+
   @Binding var query: String
   @Binding var selectedIndex: Int?
   let items: [CommandPaletteItem]
@@ -181,7 +186,7 @@ private struct CommandPaletteCard: View {
         .stroke(Color(nsColor: .tertiaryLabelColor).opacity(0.75))
     )
     .shadow(radius: 32, x: 0, y: 12)
-    .padding()
+    .padding(Self.padding)
     .environment(\.colorScheme, colorScheme)
   }
 }
@@ -264,6 +269,8 @@ private struct CommandPaletteQuery: View {
 }
 
 private struct CommandPaletteList: View {
+  static let listHeight: CGFloat = 200
+
   let rows: [CommandPaletteItem]
   @Binding var selectedIndex: Int?
   @Binding var hoveredID: CommandPaletteItem.ID?
@@ -290,7 +297,7 @@ private struct CommandPaletteList: View {
           }
           .padding(10)
         }
-        .frame(maxHeight: 200)
+        .frame(height: Self.listHeight)
         .onChange(of: selectedIndex) { _, newValue in
           guard let selectedIndex = newValue, rows.indices.contains(selectedIndex) else { return }
           proxy.scrollTo(rows[selectedIndex].id)
