@@ -36,6 +36,7 @@ struct PullRequestChecksPopoverView: View {
               .lineLimit(1)
           }
           .buttonStyle(.plain)
+          .focusable(false)
           .help("Open pull request on GitHub (\(AppShortcuts.openPullRequest.display))")
           .keyboardShortcut(AppShortcuts.openPullRequest.keyboardShortcut)
           .font(.headline)
@@ -68,6 +69,7 @@ struct PullRequestChecksPopoverView: View {
                       .lineLimit(1)
                   }
                   .buttonStyle(.plain)
+                  .focusable(false)
                   .help("Open check details on GitHub")
                 } else {
                   Text(check.displayName)
