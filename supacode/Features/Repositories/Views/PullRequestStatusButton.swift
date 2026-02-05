@@ -1,44 +1,5 @@
 import SwiftUI
 
-struct PullRequestStatusButton: View {
-  let model: PullRequestStatusModel
-  @Environment(CommandKeyObserver.self) private var commandKeyObserver
-
-  var body: some View {
-    PullRequestChecksPopoverButton(
-      checks: model.statusChecks,
-      pullRequestURL: model.url,
-      pullRequestTitle: model.title
-    ) {
-      let breakdown = PullRequestCheckBreakdown(checks: model.statusChecks)
-      let showsChecksRing = breakdown.total > 0 && model.state != "MERGED"
-      HStack(spacing: 6) {
-        if showsChecksRing {
-          PullRequestChecksRingView(breakdown: breakdown)
-        }
-        PullRequestBadgeView(
-          text: model.badgeText,
-          color: model.badgeColor
-        )
-        .layoutPriority(1)
-        if let detailText = model.detailText {
-          Text(commandKeyObserver.isPressed ? "Open on GitHub \(AppShortcuts.openPullRequest.display)" : detailText)
-            .lineLimit(1)
-        } else if commandKeyObserver.isPressed {
-          Text("Open on GitHub \(AppShortcuts.openPullRequest.display)")
-            .lineLimit(1)
-        }
-        if model.detailText == nil, !commandKeyObserver.isPressed {
-          Text(model.title)
-            .lineLimit(1)
-        }
-      }
-    }
-    .font(.caption)
-  }
-
-}
-
 struct PullRequestStatusModel: Equatable {
   let number: Int
   let state: String?
@@ -46,6 +7,7 @@ struct PullRequestStatusModel: Equatable {
   let title: String
   let statusChecks: [GithubPullRequestStatusCheck]
   let detailText: String?
+  let popoverStatusText: String?
 
   init?(pullRequest: GithubPullRequest?) {
     guard
@@ -62,13 +24,19 @@ struct PullRequestStatusModel: Equatable {
     if state == "MERGED" {
       self.detailText = nil
       self.statusChecks = []
+      self.popoverStatusText = nil
       return
     }
     let isDraft = pullRequest.isDraft
     let prefix = isDraft ? "(Drafted) " : ""
-    let mergeable = pullRequest.mergeable?.uppercased()
-    let mergeStateStatus = pullRequest.mergeStateStatus?.uppercased()
-    let hasConflicts = mergeable == "CONFLICTING" || mergeStateStatus == "DIRTY"
+    let mergeable = pullRequest.mergeable
+    let mergeStateStatus = pullRequest.mergeStateStatus
+    let hasConflicts = Self.hasConflicts(mergeable: mergeable, mergeStateStatus: mergeStateStatus)
+    self.popoverStatusText = Self.popoverStatusText(
+      reviewDecision: pullRequest.reviewDecision,
+      mergeable: mergeable,
+      mergeStateStatus: mergeStateStatus
+    )
     let checks = pullRequest.statusCheckRollup?.checks ?? []
     self.statusChecks = checks
     let checksDetail: String?
@@ -85,9 +53,7 @@ struct PullRequestStatusModel: Equatable {
       } else {
         self.detailText = prefix + "Merge conflicts"
       }
-      return
-    }
-    if let checksDetail {
+    } else if let checksDetail {
       self.detailText = prefix + checksDetail
     } else {
       self.detailText = isDraft ? "(Drafted)" : nil
@@ -107,5 +73,39 @@ struct PullRequestStatusModel: Equatable {
       return false
     }
     return state?.uppercased() != "CLOSED"
+  }
+
+  static func hasConflicts(mergeable: String?, mergeStateStatus: String?) -> Bool {
+    let mergeable = mergeable?.uppercased()
+    let mergeStateStatus = mergeStateStatus?.uppercased()
+    return mergeable == "CONFLICTING" || mergeStateStatus == "DIRTY"
+  }
+
+  static func popoverStatusText(
+    reviewDecision: String?,
+    mergeable: String?,
+    mergeStateStatus: String?
+  ) -> String? {
+    var statusParts: [String] = []
+    if let reviewDecision = reviewDecision?.uppercased() {
+      switch reviewDecision {
+      case "APPROVED":
+        statusParts.append("Review approved")
+      case "REVIEW_REQUIRED":
+        statusParts.append("Review required")
+      case "CHANGES_REQUESTED":
+        statusParts.append("Changes requested")
+      default:
+        break
+      }
+    }
+    let mergeableUpper = mergeable?.uppercased()
+    let mergeStateUpper = mergeStateStatus?.uppercased()
+    if hasConflicts(mergeable: mergeable, mergeStateStatus: mergeStateStatus) {
+      statusParts.append("Merge conflicts")
+    } else if mergeableUpper == "MERGEABLE" || mergeStateUpper == "CLEAN" {
+      statusParts.append("No conflicts")
+    }
+    return statusParts.isEmpty ? nil : statusParts.joined(separator: " • ")
   }
 }

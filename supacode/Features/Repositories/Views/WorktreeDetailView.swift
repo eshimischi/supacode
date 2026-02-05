@@ -17,7 +17,6 @@ struct WorktreeDetailView: View {
     let selectedWorktree = repositories.worktree(for: repositories.selectedWorktreeID)
     let loadingInfo = loadingInfo(for: selectedRow, repositories: repositories)
     let hasActiveWorktree = selectedWorktree != nil && loadingInfo == nil
-    let pullRequest = selectedWorktree.flatMap { repositories.worktreeInfoByID[$0.id]?.pullRequest }
     let openActionSelection = state.openActionSelection
     let runScriptConfigured =
       !state.selectedRunScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -60,7 +59,6 @@ struct WorktreeDetailView: View {
           && !repositories.isWorktreeArchived(selectedWorktree.id)
         let toolbarState = WorktreeToolbarState(
           branchName: selectedWorktree.name,
-          pullRequest: pullRequest,
           openActionSelection: openActionSelection,
           showExtras: commandKeyObserver.isPressed,
           runScriptEnabled: runScriptEnabled,
@@ -157,7 +155,6 @@ struct WorktreeDetailView: View {
 
   fileprivate struct WorktreeToolbarState {
     let branchName: String
-    let pullRequest: GithubPullRequest?
     let openActionSelection: OpenWorktreeAction
     let showExtras: Bool
     let runScriptEnabled: Bool
@@ -195,17 +192,6 @@ struct WorktreeDetailView: View {
       ToolbarSpacer(.flexible)
 
       ToolbarItemGroup {
-        if let model = PullRequestStatusModel(pullRequest: toolbarState.pullRequest) {
-          PullRequestStatusButton(model: model).padding(.horizontal)
-        } else {
-          MiddleStatusView().padding(.horizontal)
-        }
-      }
-
-      ToolbarSpacer(.flexible)
-
-      ToolbarItemGroup {
-
         openMenu(
           openActionSelection: toolbarState.openActionSelection,
           showExtras: toolbarState.showExtras
@@ -388,21 +374,6 @@ private struct WorktreeToolbarPreview: View {
   init() {
     toolbarState = WorktreeDetailView.WorktreeToolbarState(
       branchName: "feature/toolbar-preview",
-      pullRequest: GithubPullRequest(
-        number: 128,
-        title: "Add toolbar preview",
-        state: "OPEN",
-        additions: 120,
-        deletions: 12,
-        isDraft: false,
-        reviewDecision: "APPROVED",
-        mergeable: "MERGEABLE",
-        mergeStateStatus: "CLEAN",
-        updatedAt: Date(),
-        url: "https://github.com/supabitapp/supacode/pull/128",
-        headRefName: "feature/toolbar-preview",
-        statusCheckRollup: nil
-      ),
       openActionSelection: .finder,
       showExtras: false,
       runScriptEnabled: true,
