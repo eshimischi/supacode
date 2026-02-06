@@ -50,7 +50,6 @@ jobs:
             echo "::error::Developer ID Application identity not found in keychain"
             exit 1
           fi
-          echo "Found identity: $DEVELOPER_ID_IDENTITY_SHA"
           echo "DEVELOPER_ID_IDENTITY_SHA=$DEVELOPER_ID_IDENTITY_SHA" >> "$GITHUB_ENV"
       - name: Ghostty cache
         uses: actions/cache@v4
