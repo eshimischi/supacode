@@ -218,12 +218,7 @@ struct WorktreeRowsView: View {
     Button("Delete Worktree (\(deleteShortcut))", role: .destructive) {
       store.send(.requestDeleteWorktree(worktree.id, repository.id))
     }
-    .help(
-      row.isMainWorktree
-        ? "Main worktree can't be deleted"
-        : "Delete Worktree (\(deleteShortcut))"
-    )
-    .disabled(row.isMainWorktree)
+    .help("Delete Worktree (\(deleteShortcut))")
   }
 
   private func worktreeShortcutHint(for index: Int?) -> String? {
