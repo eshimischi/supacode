@@ -893,27 +893,29 @@ struct RepositoriesFeature {
         let wasPinned = state.pinnedWorktreeIDs.contains(worktreeID)
         var didUpdateWorktreeOrder = false
         let wasArchived = state.isWorktreeArchived(worktreeID)
-        state.deletingWorktreeIDs.remove(worktreeID)
-        state.pendingWorktrees.removeAll { $0.id == worktreeID }
-        state.pendingSetupScriptWorktreeIDs.remove(worktreeID)
-        state.pendingTerminalFocusWorktreeIDs.remove(worktreeID)
-        state.worktreeInfoByID.removeValue(forKey: worktreeID)
-        state.pinnedWorktreeIDs.removeAll { $0 == worktreeID }
-        state.archivedWorktreeIDs.removeAll { $0 == worktreeID }
-        if var order = state.worktreeOrderByRepository[repositoryID] {
-          order.removeAll { $0 == worktreeID }
-          if order.isEmpty {
-            state.worktreeOrderByRepository.removeValue(forKey: repositoryID)
-          } else {
-            state.worktreeOrderByRepository[repositoryID] = order
+        withAnimation(.easeOut(duration: 0.2)) {
+          state.deletingWorktreeIDs.remove(worktreeID)
+          state.pendingWorktrees.removeAll { $0.id == worktreeID }
+          state.pendingSetupScriptWorktreeIDs.remove(worktreeID)
+          state.pendingTerminalFocusWorktreeIDs.remove(worktreeID)
+          state.worktreeInfoByID.removeValue(forKey: worktreeID)
+          state.pinnedWorktreeIDs.removeAll { $0 == worktreeID }
+          state.archivedWorktreeIDs.removeAll { $0 == worktreeID }
+          if var order = state.worktreeOrderByRepository[repositoryID] {
+            order.removeAll { $0 == worktreeID }
+            if order.isEmpty {
+              state.worktreeOrderByRepository.removeValue(forKey: repositoryID)
+            } else {
+              state.worktreeOrderByRepository[repositoryID] = order
+            }
+            didUpdateWorktreeOrder = true
           }
-          didUpdateWorktreeOrder = true
-        }
-        _ = removeWorktree(worktreeID, repositoryID: repositoryID, state: &state)
-        let selectionNeedsUpdate = state.selection == .worktree(worktreeID)
-        if selectionNeedsUpdate {
-          let nextWorktreeID = nextSelection ?? firstAvailableWorktreeID(in: repositoryID, state: state)
-          state.selection = nextWorktreeID.map(SidebarSelection.worktree)
+          _ = removeWorktree(worktreeID, repositoryID: repositoryID, state: &state)
+          let selectionNeedsUpdate = state.selection == .worktree(worktreeID)
+          if selectionNeedsUpdate {
+            let nextWorktreeID = nextSelection ?? firstAvailableWorktreeID(in: repositoryID, state: state)
+            state.selection = nextWorktreeID.map(SidebarSelection.worktree)
+          }
         }
         let roots = state.repositories.map(\.rootURL)
         let repositories = state.repositories
