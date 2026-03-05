@@ -20,6 +20,14 @@ struct AppearanceSettingsView: View {
               }
             }
           }
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Terminal theming follows Ghostty config. Edit it in `~/.config/ghostty/config`.")
+            Text("theme = light:Monokai Pro Light Sun,dark:Dimmed Monokai")
+              .monospaced()
+          }
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .textSelection(.enabled)
         }
         Section("Default Editor") {
           Picker(
