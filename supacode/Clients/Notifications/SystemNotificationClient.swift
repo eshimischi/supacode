@@ -8,6 +8,7 @@ private final class ForegroundSystemNotificationDelegate: NSObject, UNUserNotifi
     _ center: UNUserNotificationCenter,
     willPresent notification: UNNotification
   ) async -> UNNotificationPresentationOptions {
+    await Task.yield()
     [.badge, .sound, .banner]
   }
 }
