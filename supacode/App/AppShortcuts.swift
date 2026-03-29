@@ -6,7 +6,7 @@ import SwiftUI
 // Compile-time checkable shortcut identifier.
 nonisolated enum AppShortcutID: Codable, Hashable, Sendable, CodingKeyRepresentable {
   case commandPalette, openSettings, checkForUpdates
-  case toggleLeftSidebar, revealInSidebar
+  case toggleLeftSidebar
   case newWorktree, refreshWorktrees, archivedWorktrees, archiveWorktree
   case deleteWorktree, confirmWorktreeAction
   case selectNextWorktree, selectPreviousWorktree
@@ -37,7 +37,6 @@ nonisolated enum AppShortcutID: Codable, Hashable, Sendable, CodingKeyRepresenta
     case .openSettings: "openSettings"
     case .checkForUpdates: "checkForUpdates"
     case .toggleLeftSidebar: "toggleLeftSidebar"
-    case .revealInSidebar: "revealInSidebar"
     case .newWorktree: "newWorktree"
     case .refreshWorktrees: "refreshWorktrees"
     case .archivedWorktrees: "archivedWorktrees"
@@ -61,7 +60,6 @@ nonisolated enum AppShortcutID: Codable, Hashable, Sendable, CodingKeyRepresenta
     "openSettings": .openSettings,
     "checkForUpdates": .checkForUpdates,
     "toggleLeftSidebar": .toggleLeftSidebar,
-    "revealInSidebar": .revealInSidebar,
     "newWorktree": .newWorktree,
     "refreshWorktrees": .refreshWorktrees,
     "archivedWorktrees": .archivedWorktrees,
@@ -96,7 +94,6 @@ nonisolated enum AppShortcutID: Codable, Hashable, Sendable, CodingKeyRepresenta
     case .openSettings: "Open Settings"
     case .checkForUpdates: "Check For Updates"
     case .toggleLeftSidebar: "Toggle Left Sidebar"
-    case .revealInSidebar: "Reveal in Sidebar"
     case .newWorktree: "New Worktree"
     case .refreshWorktrees: "Refresh Worktrees"
     case .archivedWorktrees: "Archived Worktrees"
@@ -268,7 +265,6 @@ enum AppShortcuts {
   static let checkForUpdates = AppShortcut(id: .checkForUpdates, key: "u", modifiers: .command)
 
   static let toggleLeftSidebar = AppShortcut(id: .toggleLeftSidebar, key: "[", modifiers: .command)
-  static let revealInSidebar = AppShortcut(id: .revealInSidebar, key: "e", modifiers: [.command, .shift])
 
   static let newWorktree = AppShortcut(id: .newWorktree, key: "n", modifiers: .command)
   static let refreshWorktrees = AppShortcut(id: .refreshWorktrees, key: "r", modifiers: [.command, .shift])
@@ -321,7 +317,7 @@ enum AppShortcuts {
 
   static let groups: [AppShortcutGroup] = [
     AppShortcutGroup(category: .general, shortcuts: [commandPalette, openSettings, checkForUpdates]),
-    AppShortcutGroup(category: .sidebar, shortcuts: [toggleLeftSidebar, revealInSidebar]),
+    AppShortcutGroup(category: .sidebar, shortcuts: [toggleLeftSidebar]),
     AppShortcutGroup(
       category: .worktrees,
       shortcuts: [
