@@ -37,106 +37,96 @@ struct WorktreeCommands: Commands {
     let run = AppShortcuts.runScript.effective(from: overrides)
     let stop = AppShortcuts.stopRunScript.effective(from: overrides)
     CommandMenu("Worktrees") {
-      // Creation and opening.
-      Button("New Worktree…", systemImage: "plus") {
-        store.send(.repositories(.createRandomWorktree))
+      Button("Select Next Worktree") {
+        store.send(.repositories(.selectNextWorktree))
       }
-      .appKeyboardShortcut(newWt)
-      .help("New Worktree (\(newWt?.display ?? "none"))")
-      .disabled(!repositories.canCreateWorktree)
-      Button("Open in Finder", systemImage: "folder") {
+      .appKeyboardShortcut(selectNext)
+      .help("Select Next Worktree (\(selectNext?.display ?? "none"))")
+      .disabled(orderedRows.isEmpty)
+      Button("Select Previous Worktree") {
+        store.send(.repositories(.selectPreviousWorktree))
+      }
+      .appKeyboardShortcut(selectPrevious)
+      .help("Select Previous Worktree (\(selectPrevious?.display ?? "none"))")
+      .disabled(orderedRows.isEmpty)
+      Divider()
+      let worktreeShortcutsList = worktreeShortcuts(from: overrides)
+      ForEach(worktreeShortcutsList.indices, id: \.self) { index in
+        WorktreeShortcutButton(
+          index: index,
+          shortcut: worktreeShortcutsList[index],
+          orderedRows: orderedRows,
+          store: store
+        )
+      }
+    }
+    CommandGroup(replacing: .newItem) {
+      Button("Open Repository...", systemImage: "folder") {
+        store.send(.repositories(.setOpenPanelPresented(true)))
+      }
+      .appKeyboardShortcut(openRepo)
+      .help("Open Repository (\(openRepo?.display ?? "none"))")
+      Button("Open Worktree") {
         openSelectedWorktreeAction?()
       }
       .appKeyboardShortcut(openWorktree)
-      .help("Open in Finder (\(openWorktree?.display ?? "none"))")
+      .help("Open Worktree (\(openWorktree?.display ?? "none"))")
       .disabled(openSelectedWorktreeAction == nil)
-      Button("Open Pull Request", systemImage: "arrow.up.forward") {
+      Button("Open Pull Request on GitHub") {
         if let pullRequestURL {
           NSWorkspace.shared.open(pullRequestURL)
         }
       }
       .appKeyboardShortcut(openPR)
-      .help("Open Pull Request (\(openPR?.display ?? "none"))")
+      .help("Open Pull Request on GitHub (\(openPR?.display ?? "none"))")
       .disabled(pullRequestURL == nil || !githubIntegrationEnabled)
-      Divider()
-      // Lifecycle.
-      Button("Refresh Worktrees", systemImage: "arrow.clockwise") {
-        store.send(.repositories(.refreshWorktrees))
+      Button("New Worktree", systemImage: "plus") {
+        store.send(.repositories(.createRandomWorktree))
       }
-      .appKeyboardShortcut(refresh)
-      .help("Refresh (\(refresh?.display ?? "none"))")
-      Button("Archived Worktrees", systemImage: "archivebox") {
+      .appKeyboardShortcut(newWt)
+      .help("New Worktree (\(newWt?.display ?? "none"))")
+      .disabled(!repositories.canCreateWorktree)
+      Button("Archived Worktrees") {
         store.send(.repositories(.selectArchivedWorktrees))
       }
       .appKeyboardShortcut(archived)
       .help("Archived Worktrees (\(archived?.display ?? "none"))")
-      Divider()
-      // Commands.
-      Button("Archive Worktree…", systemImage: "archivebox") {
+      Button("Archive Worktree") {
         archiveWorktreeAction?()
       }
       .appKeyboardShortcut(archive)
       .help("Archive Worktree (\(archive?.display ?? "none"))")
       .disabled(archiveWorktreeAction == nil)
-      Button("Delete Worktree…", systemImage: "trash") {
+      Button("Delete Worktree") {
         deleteWorktreeAction?()
       }
       .appKeyboardShortcut(deleteWt)
       .help("Delete Worktree (\(deleteWt?.display ?? "none"))")
       .disabled(deleteWorktreeAction == nil)
+      Button("Confirm Worktree Action") {
+        confirmWorktreeAction?()
+      }
+      .appKeyboardShortcut(confirm)
+      .help("Confirm Worktree Action (\(confirm?.display ?? "none"))")
+      .disabled(confirmWorktreeAction == nil)
+      Button("Refresh Worktrees") {
+        store.send(.repositories(.refreshWorktrees))
+      }
+      .appKeyboardShortcut(refresh)
+      .help("Refresh Worktrees (\(refresh?.display ?? "none"))")
       Divider()
-      // Scripts.
-      Button("Run Script", systemImage: "play") {
+      Button("Run Script") {
         runScriptAction?()
       }
       .appKeyboardShortcut(run)
       .help("Run Script (\(run?.display ?? "none"))")
       .disabled(runScriptAction == nil)
-      Button("Stop Script", systemImage: "stop") {
+      Button("Stop Script") {
         stopRunScriptAction?()
       }
       .appKeyboardShortcut(stop)
       .help("Stop Script (\(stop?.display ?? "none"))")
       .disabled(stopRunScriptAction == nil)
-      Divider()
-      // Navigation.
-      Button("Select Next", systemImage: "chevron.down") {
-        store.send(.repositories(.selectNextWorktree))
-      }
-      .appKeyboardShortcut(selectNext)
-      .help("Select Next (\(selectNext?.display ?? "none"))")
-      .disabled(orderedRows.isEmpty)
-      Button("Select Previous", systemImage: "chevron.up") {
-        store.send(.repositories(.selectPreviousWorktree))
-      }
-      .appKeyboardShortcut(selectPrevious)
-      .help("Select Previous (\(selectPrevious?.display ?? "none"))")
-      .disabled(orderedRows.isEmpty)
-      // Direct worktree shortcuts.
-      let worktreeShortcutsList = worktreeShortcuts(from: overrides)
-      Menu("Select Worktree") {
-        ForEach(worktreeShortcutsList.indices, id: \.self) { index in
-          WorktreeShortcutButton(
-            index: index,
-            shortcut: worktreeShortcutsList[index],
-            orderedRows: orderedRows,
-            store: store
-          )
-        }
-      }
-    }
-    CommandGroup(replacing: .newItem) {
-      Button("Add Repository...", systemImage: "folder.badge.plus") {
-        store.send(.repositories(.setOpenPanelPresented(true)))
-      }
-      .appKeyboardShortcut(openRepo)
-      .help("Add Repository (\(openRepo?.display ?? "none"))")
-      Button("Confirm Action") {
-        confirmWorktreeAction?()
-      }
-      .appKeyboardShortcut(confirm)
-      .help("Confirm Action (\(confirm?.display ?? "none"))")
-      .disabled(confirmWorktreeAction == nil)
     }
   }
 
